@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated data (re-created by running the pipeline)
+data/bronze/
+data/silver/
+data/gold/
+data/incoming/processed/
+data/fittrack.duckdb
+data/fittrack.duckdb.wal
+
+# Logs (generated at runtime)
+logs/
+
+# Quality reports (generated at runtime)
+reports/
+
+# Keep sample data and incoming directory structure
+!data/sample/
+!data/incoming/.gitkeep
+
+# Claude Code
+.claude/

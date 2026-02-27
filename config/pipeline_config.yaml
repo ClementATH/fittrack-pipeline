@@ -1,0 +1,96 @@
+# ============================================================
+# FitTrack Pro ETL Pipeline Configuration
+# ============================================================
+# This is the central config file for the entire pipeline.
+#
+# LEARN: Externalizing configuration into YAML means you can change
+# pipeline behavior (retry counts, batch sizes, file paths) without
+# touching any Python code. This is a best practice in production
+# data engineering — your code should be config-driven.
+# ============================================================
+
+pipeline:
+  name: "fittrack-etl-pipeline"
+  version: "1.0.0"
+  environment: "development"  # development | staging | production
+
+# Database configuration (DuckDB for local analytical workloads)
+database:
+  path: "data/fittrack.duckdb"
+  read_only: false
+  threads: 4  # DuckDB parallel threads
+
+# Bronze Layer — Raw Ingestion Settings
+bronze:
+  storage_path: "data/bronze"
+  storage_format: "parquet"  # parquet | json
+  # Metadata added to every ingested record
+  add_metadata: true
+  metadata_fields:
+    - ingestion_timestamp
+    - source_name
+    - batch_id
+    - source_hash
+
+# Silver Layer — Transformation Settings
+silver:
+  storage_path: "data/silver"
+  storage_format: "parquet"
+  # Column naming convention applied to all tables
+  naming_convention: "snake_case"
+  # Deduplication settings
+  dedup:
+    enabled: true
+    strategy: "keep_latest"  # keep_latest | keep_first
+  # Null handling
+  null_handling:
+    numeric_fill: null  # null = keep as-is, 0 = fill with zero
+    string_fill: null
+    date_fill: null
+
+# Gold Layer — Warehouse Settings
+gold:
+  storage_path: "data/gold"
+  storage_format: "parquet"
+  # SCD (Slowly Changing Dimension) configuration
+  scd:
+    default_type: 2  # SCD Type 2 for history tracking
+    effective_date_column: "effective_from"
+    end_date_column: "effective_to"
+    current_flag_column: "is_current"
+
+# Retry & Error Handling
+retry:
+  max_attempts: 3
+  # Exponential backoff: wait = base_delay * (backoff_factor ^ attempt)
+  base_delay_seconds: 5
+  backoff_factor: 2
+  max_delay_seconds: 60
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  log_dir: "logs"
+  # Structured JSON logs for machine parsing
+  json_logs: true
+  # Also log to console with human-readable format
+  console_output: true
+  # Maximum log file size before rotation
+  max_file_size_mb: 50
+  backup_count: 5
+
+# Scheduling
+scheduling:
+  enabled: false  # Set true to run on schedule
+  # Cron expression: minute hour day_of_month month day_of_week
+  full_pipeline_cron: "0 6 * * *"  # Daily at 6 AM
+  quality_check_cron: "0 */4 * * *"  # Every 4 hours
+  health_check_cron: "*/15 * * * *"  # Every 15 minutes
+
+# Monitoring
+monitoring:
+  health_check_interval_seconds: 900  # 15 minutes
+  alert_log_path: "logs/alerts.json"
+  dashboard:
+    enabled: true
+    port: 8501

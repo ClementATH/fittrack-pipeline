@@ -1,0 +1,11 @@
+date,athlete_email,exercise,set_number,weight,weight_unit,reps,rpe,notes
+2026-02-20,marcus.chen@email.com,Barbell Bench Press,1,90,kg,8,7.5,Warm-up top set
+2026-02-20,marcus.chen@email.com,Barbell Bench Press,2,100,kg,6,8.0,Felt strong today
+2026-02-20,marcus.chen@email.com,Barbell Bench Press,3,100,kg,5,8.5,Slight grind on last rep
+2026-02-20,marcus.chen@email.com,Overhead Press,1,55,kg,8,7.5,Smooth reps
+2026-02-20,marcus.chen@email.com,Overhead Press,2,60,kg,6,8.5,Good lockout
+2026-02-22,marcus.chen@email.com,Barbell Deadlift,1,140,kg,5,7.0,Warm-up pull felt fast
+2026-02-22,marcus.chen@email.com,Barbell Deadlift,2,160,kg,4,8.5,Grip held well
+2026-02-22,marcus.chen@email.com,Barbell Row,1,80,kg,8,7.5,Controlled tempo
+2026-02-24,marcus.chen@email.com,Barbell Squat,1,120,kg,6,8.0,Depth was good
+2026-02-24,marcus.chen@email.com,Barbell Squat,2,125,kg,5,9.0,Last rep was a grinder

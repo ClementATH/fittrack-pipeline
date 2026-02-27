@@ -1,0 +1,133 @@
+# ============================================================
+# Data Source Definitions
+# ============================================================
+# Each source defines where to pull data, how to connect,
+# and what ingestion strategy to use.
+#
+# LEARN: Keeping source definitions in YAML makes your pipeline
+# extensible. Adding a new data source is as simple as adding
+# a new entry here — no code changes needed for basic ingestion.
+# ============================================================
+
+sources:
+  # ----------------------------------------------------------
+  # Source 1: Wger Fitness API
+  # Provides exercise data (exercises, muscles, equipment)
+  # Maps to: exercises table in Gold layer
+  # ----------------------------------------------------------
+  wger_exercises:
+    type: "rest_api"
+    description: "Wger Fitness API — Exercise library with muscle groups and equipment"
+    base_url: "https://wger.de/api/v2"
+    endpoints:
+      exercises:
+        path: "/exercise/"
+        params:
+          format: "json"
+          language: 2  # English
+          limit: 100
+        pagination:
+          type: "offset"  # offset | cursor | page
+          limit_param: "limit"
+          offset_param: "offset"
+          results_key: "results"
+          next_key: "next"
+      muscles:
+        path: "/muscle/"
+        params:
+          format: "json"
+        pagination:
+          type: "offset"
+          results_key: "results"
+      equipment:
+        path: "/equipment/"
+        params:
+          format: "json"
+        pagination:
+          type: "offset"
+          results_key: "results"
+      exercise_images:
+        path: "/exerciseimage/"
+        params:
+          format: "json"
+          limit: 100
+        pagination:
+          type: "offset"
+          limit_param: "limit"
+          offset_param: "offset"
+          results_key: "results"
+    rate_limit:
+      requests_per_minute: 60
+      retry_on_429: true
+    auth:
+      type: "none"  # none | api_key | bearer | basic
+    schedule:
+      frequency: "daily"
+      incremental: false  # Full refresh since exercise library is small
+
+  # ----------------------------------------------------------
+  # Source 2: USDA FoodData Central API
+  # Provides nutritional data for athlete meal tracking
+  # Maps to: nutrition_logs table in Gold layer
+  # ----------------------------------------------------------
+  usda_nutrition:
+    type: "rest_api"
+    description: "USDA FoodData Central — Nutritional data for foods"
+    base_url: "https://api.nal.usda.gov/fdc/v1"
+    endpoints:
+      foods_search:
+        path: "/foods/search"
+        params:
+          dataType:
+            - "Foundation"
+            - "SR Legacy"
+          pageSize: 50
+        pagination:
+          type: "page"
+          page_param: "pageNumber"
+          results_key: "foods"
+          total_key: "totalHits"
+      food_detail:
+        path: "/food/{fdc_id}"
+        params: {}
+    rate_limit:
+      requests_per_minute: 30
+      retry_on_429: true
+    auth:
+      type: "api_key"
+      key_param: "api_key"
+      # API key loaded from environment variable USDA_API_KEY
+      # Get yours free at: https://fdc.nal.usda.gov/api-key-signup.html
+      env_var: "USDA_API_KEY"
+    schedule:
+      frequency: "weekly"
+      incremental: true
+
+  # ----------------------------------------------------------
+  # Source 3: File Drop Zone (CSV/JSON)
+  # Watches data/incoming/ for athlete performance files
+  # Maps to: workouts, workout_sets, body_metrics in Gold layer
+  # ----------------------------------------------------------
+  file_drop_zone:
+    type: "file"
+    description: "File drop zone for athlete performance data exports"
+    watch_directory: "data/incoming"
+    supported_formats:
+      - ".csv"
+      - ".json"
+    file_patterns:
+      workout_logs: "workout_*.{csv,json}"
+      body_metrics: "metrics_*.{csv,json}"
+      nutrition_logs: "nutrition_*.{csv,json}"
+    processing:
+      move_after_processing: true
+      processed_directory: "data/incoming/processed"
+      error_directory: "data/incoming/errors"
+      # Max file size to process (MB)
+      max_file_size_mb: 100
+    schema_inference:
+      enabled: true
+      sample_rows: 1000
+    schedule:
+      frequency: "on_arrival"  # Watch for new files continuously
+      poll_interval_seconds: 30

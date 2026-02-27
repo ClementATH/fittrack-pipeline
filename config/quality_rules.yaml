@@ -1,0 +1,236 @@
+# ============================================================
+# Data Quality Rules Configuration
+# ============================================================
+# Rules are evaluated at the Silver layer after cleaning.
+# Each rule has a severity level that determines alerting behavior:
+#   CRITICAL — Pipeline halts, immediate alert
+#   WARNING  — Pipeline continues, alert logged
+#   INFO     — Logged for reporting only
+#
+# LEARN: Having quality rules in YAML means domain experts (like
+# a coach or nutritionist) can update validation rules without
+# knowing Python. This is how real data teams operate — engineers
+# build the framework, domain experts configure the rules.
+# ============================================================
+
+# ----------------------------------------------------------
+# Schema Rules: Expected column types and required fields
+# ----------------------------------------------------------
+schema_rules:
+  exercises:
+    required_columns:
+      - name
+      - primary_muscle
+      - exercise_type
+      - equipment
+      - difficulty
+    column_types:
+      name: "string"
+      primary_muscle: "string"
+      exercise_type: "string"
+      equipment: "string"
+      difficulty: "string"
+      is_unilateral: "boolean"
+    severity: "CRITICAL"
+
+  workouts:
+    required_columns:
+      - athlete_id
+      - workout_date
+      - status
+    column_types:
+      athlete_id: "string"
+      workout_date: "date"
+      status: "string"
+      duration_minutes: "numeric"
+      total_volume_kg: "numeric"
+      energy_level: "integer"
+    severity: "CRITICAL"
+
+  body_metrics:
+    required_columns:
+      - athlete_id
+      - measured_at
+      - weight_kg
+    column_types:
+      athlete_id: "string"
+      measured_at: "date"
+      weight_kg: "numeric"
+      body_fat_pct: "numeric"
+    severity: "CRITICAL"
+
+  nutrition_logs:
+    required_columns:
+      - athlete_id
+      - log_date
+      - meal_type
+      - calories
+    column_types:
+      athlete_id: "string"
+      log_date: "date"
+      meal_type: "string"
+      calories: "integer"
+      protein_g: "numeric"
+      carbs_g: "numeric"
+      fats_g: "numeric"
+    severity: "CRITICAL"
+
+# ----------------------------------------------------------
+# Business Rules: Domain-specific validations
+# ----------------------------------------------------------
+business_rules:
+  exercises:
+    - rule: "name_not_empty"
+      description: "Exercise name must not be empty or whitespace"
+      column: "name"
+      check: "not_empty"
+      severity: "CRITICAL"
+
+    - rule: "valid_muscle_group"
+      description: "Primary muscle must be a recognized muscle group"
+      column: "primary_muscle"
+      check: "in_set"
+      allowed_values:
+        - "chest"
+        - "back"
+        - "shoulders"
+        - "biceps"
+        - "triceps"
+        - "forearms"
+        - "quads"
+        - "hamstrings"
+        - "glutes"
+        - "calves"
+        - "abs"
+        - "obliques"
+        - "traps"
+        - "lats"
+        - "hip_flexors"
+        - "adductors"
+        - "abductors"
+        - "neck"
+        - "full_body"
+      severity: "CRITICAL"
+
+  workouts:
+    - rule: "valid_status"
+      description: "Workout status must be a recognized value"
+      column: "status"
+      check: "in_set"
+      allowed_values: ["completed", "skipped", "partial", "planned"]
+      severity: "CRITICAL"
+
+    - rule: "reasonable_duration"
+      description: "Workout duration should be between 10 and 300 minutes"
+      column: "duration_minutes"
+      check: "range"
+      min: 10
+      max: 300
+      severity: "WARNING"
+
+    - rule: "energy_level_valid"
+      description: "Energy level rating must be 1-10"
+      column: "energy_level"
+      check: "range"
+      min: 1
+      max: 10
+      severity: "WARNING"
+
+  body_metrics:
+    - rule: "weight_reasonable"
+      description: "Body weight should be between 30 and 300 kg"
+      column: "weight_kg"
+      check: "range"
+      min: 30.0
+      max: 300.0
+      severity: "WARNING"
+
+    - rule: "body_fat_reasonable"
+      description: "Body fat percentage should be between 3 and 60 percent"
+      column: "body_fat_pct"
+      check: "range"
+      min: 3.0
+      max: 60.0
+      severity: "WARNING"
+
+    - rule: "heart_rate_reasonable"
+      description: "Resting heart rate should be between 30 and 120 bpm"
+      column: "resting_heart_rate"
+      check: "range"
+      min: 30
+      max: 120
+      severity: "WARNING"
+
+  nutrition_logs:
+    - rule: "calories_non_negative"
+      description: "Calories cannot be negative"
+      column: "calories"
+      check: "min"
+      min: 0
+      severity: "CRITICAL"
+
+    - rule: "calories_reasonable"
+      description: "Single meal should not exceed 5000 calories"
+      column: "calories"
+      check: "max"
+      max: 5000
+      severity: "WARNING"
+
+    - rule: "protein_non_negative"
+      description: "Protein grams cannot be negative"
+      column: "protein_g"
+      check: "min"
+      min: 0
+      severity: "CRITICAL"
+
+    - rule: "valid_meal_type"
+      description: "Meal type must be a recognized value"
+      column: "meal_type"
+      check: "in_set"
+      allowed_values:
+        - "breakfast"
+        - "lunch"
+        - "dinner"
+        - "pre_workout"
+        - "post_workout"
+        - "snack"
+        - "supplement"
+      severity: "CRITICAL"
+
+# ----------------------------------------------------------
+# Freshness Rules: Data staleness SLAs
+# ----------------------------------------------------------
+freshness_rules:
+  workouts:
+    max_age_hours: 48
+    description: "Workout data should be less than 48 hours old"
+    severity: "WARNING"
+
+  body_metrics:
+    max_age_hours: 72
+    description: "Body metrics should be less than 72 hours old"
+    severity: "INFO"
+
+  nutrition_logs:
+    max_age_hours: 48
+    description: "Nutrition logs should be less than 48 hours old"
+    severity: "WARNING"
+
+# ----------------------------------------------------------
+# Anomaly Detection Thresholds
+# ----------------------------------------------------------
+anomaly_detection:
+  z_score_threshold: 3.0  # Flag values > 3 standard deviations
+  iqr_multiplier: 1.5     # IQR fence multiplier for outlier detection
+  min_sample_size: 10     # Minimum rows needed before anomaly detection runs
+  columns_to_monitor:
+    body_metrics:
+      - weight_kg
+      - body_fat_pct
+      - resting_heart_rate
+    nutrition_logs:
+      - calories
+      - protein_g
+    workouts:
+      - total_volume_kg
+      - duration_minutes

@@ -1,0 +1,42 @@
+[
+  {
+    "id": 192,
+    "name": "Barbell Bench Press",
+    "description": "Flat barbell bench press targeting the chest, shoulders, and triceps. Lie on a flat bench, grip the bar slightly wider than shoulder width, lower to mid-chest, and press upward.",
+    "muscles": [4, 2, 5],
+    "equipment": [1, 8],
+    "category": 11
+  },
+  {
+    "id": 289,
+    "name": "Barbell Deadlift",
+    "description": "Conventional barbell deadlift from the floor. Hinge at the hips, grip the bar just outside the knees, brace the core, and drive through the floor to stand upright.",
+    "muscles": [10, 11, 8, 15],
+    "equipment": [1],
+    "category": 10
+  },
+  {
+    "id": 111,
+    "name": "Barbell Squat",
+    "description": "High-bar back squat. Position the barbell on the upper traps, descend by breaking at the hips and knees simultaneously, squat to parallel or below, and drive upward.",
+    "muscles": [10, 8, 14],
+    "equipment": [1, 8],
+    "category": 9
+  },
+  {
+    "id": 274,
+    "name": "Overhead Press",
+    "description": "Standing barbell overhead press. Unrack the bar at shoulder height, brace the core, and press the bar overhead to full lockout. Control the descent back to the shoulders.",
+    "muscles": [2, 5, 13],
+    "equipment": [1],
+    "category": 13
+  },
+  {
+    "id": 106,
+    "name": "Barbell Row",
+    "description": "Bent-over barbell row. Hinge forward at the hips with a slight knee bend, grip the bar shoulder-width, and row the bar into the lower chest while keeping the torso stable.",
+    "muscles": [12, 13, 3],
+    "equipment": [1],
+    "category": 12
+  }
+]
