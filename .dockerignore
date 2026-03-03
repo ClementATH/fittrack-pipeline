@@ -1,0 +1,43 @@
+# Version control
+.git
+.github
+
+# Python artifacts
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+.venv
+venv
+
+# Secrets
+.env
+
+# IDE / editor
+.claude
+.cursor
+.vscode
+.idea
+*.swp
+
+# Coverage
+.coverage
+htmlcov
+
+# Runtime data (mounted as volumes instead)
+data/bronze/
+data/silver/
+data/gold/
+data/fittrack.duckdb
+data/fittrack.duckdb.wal
+data/incoming/processed/
+data/incoming/errors/
+logs/
+reports/
+
+# Node (if any)
+node_modules

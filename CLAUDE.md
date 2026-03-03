@@ -30,6 +30,11 @@ py -3 -m mypy src/
 
 # Launch monitoring dashboard
 py -3 -m streamlit run src/monitor/dashboard.py --server.port 8501
+
+# Docker
+docker compose build
+docker compose --profile pipeline run --rm pipeline   # Run pipeline
+docker compose up dashboard                           # Start dashboard
 ```
 
 ## Conventions
@@ -39,7 +44,8 @@ py -3 -m streamlit run src/monitor/dashboard.py --server.port 8501
 - Type hints on all function signatures
 - Docstrings explain WHAT and WHY, not just HOW
 - Design patterns: Strategy (ingestors), Facade (orchestrator), Builder (dimensions)
-- Tests in `tests/` mirror `src/` structure. 110 tests, all should pass.
+- Data contracts in `src/quality/contracts/` enforce Silver-layer schemas via Pydantic
+- Tests in `tests/` mirror `src/` structure. ~140 tests, all should pass.
 
 ## Data Flow
 Sources (Wger API, USDA API, CSV/JSON files) → Bronze (raw Parquet) → Silver (cleaned Parquet) → Quality Gate → Gold (DuckDB star schema)

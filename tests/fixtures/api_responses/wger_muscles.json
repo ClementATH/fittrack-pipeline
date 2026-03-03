@@ -1,0 +1,11 @@
+{
+  "count": 4,
+  "next": null,
+  "previous": null,
+  "results": [
+    {"id": 2, "name": "Anterior deltoid", "is_front": true},
+    {"id": 4, "name": "Pectoralis major", "is_front": true},
+    {"id": 8, "name": "Quadriceps femoris", "is_front": true},
+    {"id": 10, "name": "Biceps femoris", "is_front": false}
+  ]
+}

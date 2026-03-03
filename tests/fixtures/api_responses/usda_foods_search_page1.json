@@ -1,0 +1,25 @@
+{
+  "totalHits": 4,
+  "currentPage": 1,
+  "totalPages": 2,
+  "foods": [
+    {
+      "fdcId": 2345678,
+      "description": "Chicken breast, grilled",
+      "dataType": "Survey (FNDDS)",
+      "foodNutrients": [
+        {"nutrientName": "Protein", "value": 31.0, "unitName": "G"},
+        {"nutrientName": "Energy", "value": 165.0, "unitName": "KCAL"}
+      ]
+    },
+    {
+      "fdcId": 2345679,
+      "description": "Brown rice, cooked",
+      "dataType": "Survey (FNDDS)",
+      "foodNutrients": [
+        {"nutrientName": "Protein", "value": 2.6, "unitName": "G"},
+        {"nutrientName": "Energy", "value": 123.0, "unitName": "KCAL"}
+      ]
+    }
+  ]
+}

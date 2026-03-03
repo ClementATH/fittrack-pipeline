@@ -1,0 +1,61 @@
+{
+  "description": "Contract for exercise data at the Silver layer.",
+  "properties": {
+    "name": {
+      "description": "Exercise name, must not be empty",
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "primary_muscle": {
+      "description": "Must be a recognized muscle group",
+      "title": "Primary Muscle",
+      "type": "string"
+    },
+    "exercise_type": {
+      "default": "compound",
+      "title": "Exercise Type",
+      "type": "string"
+    },
+    "equipment": {
+      "default": "barbell",
+      "title": "Equipment",
+      "type": "string"
+    },
+    "difficulty": {
+      "default": "intermediate",
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "slug": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Slug"
+    },
+    "is_unilateral": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Is Unilateral"
+    }
+  },
+  "required": [
+    "name",
+    "primary_muscle"
+  ],
+  "title": "ExerciseContract",
+  "type": "object"
+}

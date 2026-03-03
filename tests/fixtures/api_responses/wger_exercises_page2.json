@@ -1,0 +1,23 @@
+{
+  "count": 5,
+  "next": null,
+  "previous": "https://wger.de/api/v2/exercise/?format=json&limit=3&offset=0",
+  "results": [
+    {
+      "id": 274,
+      "name": "Overhead Press",
+      "description": "Standing barbell OHP.",
+      "muscles": [2, 5, 13],
+      "equipment": [1],
+      "category": {"id": 13, "name": "Shoulders"}
+    },
+    {
+      "id": 106,
+      "name": "Barbell Row",
+      "description": "Bent-over barbell row.",
+      "muscles": [12, 13, 3],
+      "equipment": [1],
+      "category": {"id": 12, "name": "Back"}
+    }
+  ]
+}

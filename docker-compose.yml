@@ -1,0 +1,49 @@
+# ============================================================
+# FitTrack Pro — Docker Compose
+# ============================================================
+# Services:
+#   pipeline  — One-shot run of the ETL demo (use --profile pipeline)
+#   dashboard — Streamlit monitoring UI on port 8501
+#
+# Usage:
+#   docker compose build
+#   docker compose --profile pipeline run --rm pipeline
+#   docker compose up dashboard
+# ============================================================
+
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+    env_file:
+      - .env
+    profiles:
+      - pipeline
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint:
+      - python
+      - -m
+      - streamlit
+      - run
+      - src/monitor/dashboard.py
+      - --server.port
+      - "8501"
+      - --server.address
+      - 0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+    env_file:
+      - .env

@@ -545,6 +545,109 @@ def create_layer_bar(file_counts: dict[str, int]) -> go.Figure:
 
 
 # ============================================================
+# Quality trend chart factories
+# ============================================================
+def create_quality_trend_line(scores_df: pd.DataFrame) -> go.Figure:
+    """Line chart showing overall_score over time, per table."""
+    fig = go.Figure()
+    colors = ["#6C63FF", "#00D68F", "#FFAA00", "#0095FF", "#FF3D71"]
+    for i, table_name in enumerate(scores_df["table_name"].unique()):
+        table_data = scores_df[scores_df["table_name"] == table_name].sort_values("scored_at")
+        fig.add_trace(
+            go.Scatter(
+                x=table_data["scored_at"],
+                y=table_data["overall_score"],
+                mode="lines+markers",
+                name=table_name.replace("_", " ").title(),
+                marker=dict(size=8),
+                line=dict(width=2, color=colors[i % len(colors)]),
+                hovertemplate="<b>%{fullData.name}</b><br>Score: %{y:.1f}<br>Time: %{x}<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=400,
+        title=dict(text="Overall Quality Score Over Time", font=dict(size=16)),
+        xaxis_title="",
+        yaxis_title="Score",
+        yaxis=dict(range=[0, 105], gridcolor="rgba(255,255,255,0.05)"),
+    )
+    return fig
+
+
+def create_dimension_trend_lines(scores_df: pd.DataFrame, table_name: str) -> go.Figure:
+    """Line chart showing 4 quality dimensions over time for a specific table."""
+    table_data = scores_df[scores_df["table_name"] == table_name].sort_values("scored_at")
+    dimensions = {
+        "completeness_score": ("#00D68F", "Completeness"),
+        "accuracy_score": ("#6C63FF", "Accuracy"),
+        "consistency_score": ("#FFAA00", "Consistency"),
+        "timeliness_score": ("#0095FF", "Timeliness"),
+    }
+    fig = go.Figure()
+    for col, (color, label) in dimensions.items():
+        if col in table_data.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=table_data["scored_at"],
+                    y=table_data[col],
+                    mode="lines+markers",
+                    name=label,
+                    line=dict(color=color, width=2),
+                    marker=dict(size=6, color=color),
+                    hovertemplate=f"<b>{label}</b><br>Score: %{{y:.1f}}<br>Time: %{{x}}<extra></extra>",
+                )
+            )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        title=dict(
+            text=f"Dimension Trends: {table_name.replace('_', ' ').title()}",
+            font=dict(size=15),
+        ),
+        yaxis=dict(range=[0, 105], gridcolor="rgba(255,255,255,0.05)"),
+    )
+    return fig
+
+
+def create_quality_gate_bar(scores_df: pd.DataFrame) -> go.Figure:
+    """Stacked bar chart showing quality gate pass/fail counts per table."""
+    tables = sorted(scores_df["table_name"].unique())
+    pass_counts = scores_df[scores_df["overall_score"] >= 50].groupby("table_name").size()
+    fail_counts = scores_df[scores_df["overall_score"] < 50].groupby("table_name").size()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=[t.replace("_", " ").title() for t in tables],
+            y=[int(pass_counts.get(t, 0)) for t in tables],
+            name="Pass",
+            marker_color="#00D68F",
+            marker=dict(cornerradius=4),
+            hovertemplate="<b>%{x}</b><br>Pass: %{y}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            x=[t.replace("_", " ").title() for t in tables],
+            y=[int(fail_counts.get(t, 0)) for t in tables],
+            name="Fail",
+            marker_color="#FF3D71",
+            marker=dict(cornerradius=4),
+            hovertemplate="<b>%{x}</b><br>Fail: %{y}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        barmode="stack",
+        height=300,
+        title=dict(text="Quality Gate Pass/Fail Rate", font=dict(size=16)),
+        showlegend=True,
+    )
+    return fig
+
+
+# ============================================================
 # Data loaders (unchanged logic)
 # ============================================================
 def load_pipeline_runs() -> pd.DataFrame:
@@ -664,7 +767,7 @@ with st.sidebar:
 
     page = st.radio(
         "Navigate",
-        ["Overview", "Pipeline Runs", "Data Quality", "Health Checks", "Alerts"],
+        ["Overview", "Pipeline Runs", "Data Quality", "Quality Trends", "Health Checks", "Alerts"],
         index=0,
         label_visibility="collapsed",
     )
@@ -743,10 +846,10 @@ if page == "Overview":
             <div class="alert-item {sev_class}">
                 {render_status_badge(severity)}
                 <span style="margin-left: 0.75rem; color: rgba(250,250,250,0.8);">
-                    <strong>{alert.get('source', '?')}</strong>: {alert.get('message', '')}
+                    <strong>{alert.get("source", "?")}</strong>: {alert.get("message", "")}
                 </span>
                 <span style="float: right; color: rgba(250,250,250,0.35); font-size: 0.8rem;">
-                    {alert.get('timestamp', '')[:19]}
+                    {alert.get("timestamp", "")[:19]}
                 </span>
             </div>
             """,
@@ -859,7 +962,7 @@ elif page == "Data Quality":
                         table = row.get("table_name", "unknown")
                         st.markdown(
                             f'<div style="text-align: center; font-weight: 600; color: rgba(250,250,250,0.7); margin-bottom: 0.25rem;">'
-                            f'{table.replace("_", " ").title()}</div>',
+                            f"{table.replace('_', ' ').title()}</div>",
                             unsafe_allow_html=True,
                         )
                         st.plotly_chart(create_quality_radar(row), use_container_width=True, config=PLOTLY_CONFIG)
@@ -887,6 +990,65 @@ elif page == "Data Quality":
             render_empty_state("📄", "No quality reports generated yet.")
     else:
         render_empty_state("📂", "Reports directory not found.")
+
+
+# ============================================================
+# PAGE: Quality Trends
+# ============================================================
+elif page == "Quality Trends":
+    st.markdown('<div class="page-title">Quality Trends</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Track quality score evolution over time</div>',
+        unsafe_allow_html=True,
+    )
+
+    scores_df = load_quality_scores()
+
+    if scores_df.empty or "scored_at" not in scores_df.columns:
+        render_empty_state("📈", "No quality trend data yet. Run the pipeline multiple times to see trends.")
+    else:
+        scores_df["scored_at"] = pd.to_datetime(scores_df["scored_at"])
+        tables = sorted(scores_df["table_name"].unique())
+
+        # Delta indicators (latest vs previous)
+        render_section_header("Score Changes (Latest vs Previous)")
+        delta_cols = st.columns(len(tables))
+        for i, table in enumerate(tables):
+            table_scores = scores_df[scores_df["table_name"] == table].sort_values("scored_at", ascending=False)
+            latest = float(table_scores.iloc[0]["overall_score"]) if len(table_scores) >= 1 else 0.0
+            previous = float(table_scores.iloc[1]["overall_score"]) if len(table_scores) >= 2 else latest
+            delta = latest - previous
+            delta_str = f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
+            color = "#00D68F" if delta >= 0 else "#FF3D71"
+            with delta_cols[i]:
+                st.markdown(
+                    f"""
+                <div class="metric-card">
+                    <div class="metric-label">{table.replace("_", " ").title()}</div>
+                    <div class="metric-value">{latest:.1f}</div>
+                    <div style="color: {color}; font-weight: 600; font-size: 0.95rem;">{delta_str}</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+        # Overall trend line chart
+        render_section_header("Overall Score Trends")
+        st.plotly_chart(create_quality_trend_line(scores_df), use_container_width=True, config=PLOTLY_CONFIG)
+
+        # Quality gate pass/fail bar chart
+        render_section_header("Quality Gate Results")
+        st.plotly_chart(create_quality_gate_bar(scores_df), use_container_width=True, config=PLOTLY_CONFIG)
+
+        # Per-table dimension trends
+        render_section_header("Dimension Trends by Table")
+        selected_table = st.selectbox("Select table", tables)
+        if selected_table:
+            st.plotly_chart(
+                create_dimension_trend_lines(scores_df, selected_table),
+                use_container_width=True,
+                config=PLOTLY_CONFIG,
+            )
 
 
 # ============================================================

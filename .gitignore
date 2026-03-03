@@ -22,6 +22,13 @@ env/
 .coverage
 htmlcov/
 
+# Linting / type checking cache
+.mypy_cache/
+.ruff_cache/
+
+# Environment secrets
+.env
+
 # Generated data (re-created by running the pipeline)
 data/bronze/
 data/silver/

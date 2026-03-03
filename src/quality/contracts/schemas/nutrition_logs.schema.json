@@ -1,0 +1,77 @@
+{
+  "description": "Contract for nutrition log data at the Silver layer.",
+  "properties": {
+    "athlete_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Athlete Id"
+    },
+    "log_date": {
+      "title": "Log Date",
+      "type": "string"
+    },
+    "meal_type": {
+      "title": "Meal Type",
+      "type": "string"
+    },
+    "calories": {
+      "maximum": 5000,
+      "minimum": 0,
+      "title": "Calories",
+      "type": "number"
+    },
+    "protein_g": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Protein G"
+    },
+    "carbs_g": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Carbs G"
+    },
+    "fats_g": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fats G"
+    }
+  },
+  "required": [
+    "log_date",
+    "meal_type",
+    "calories"
+  ],
+  "title": "NutritionLogContract",
+  "type": "object"
+}

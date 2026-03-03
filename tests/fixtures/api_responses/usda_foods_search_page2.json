@@ -1,0 +1,25 @@
+{
+  "totalHits": 4,
+  "currentPage": 2,
+  "totalPages": 2,
+  "foods": [
+    {
+      "fdcId": 2345680,
+      "description": "Sweet potato, baked",
+      "dataType": "Survey (FNDDS)",
+      "foodNutrients": [
+        {"nutrientName": "Protein", "value": 2.0, "unitName": "G"},
+        {"nutrientName": "Energy", "value": 90.0, "unitName": "KCAL"}
+      ]
+    },
+    {
+      "fdcId": 2345681,
+      "description": "Salmon, Atlantic, cooked",
+      "dataType": "Survey (FNDDS)",
+      "foodNutrients": [
+        {"nutrientName": "Protein", "value": 25.4, "unitName": "G"},
+        {"nutrientName": "Energy", "value": 208.0, "unitName": "KCAL"}
+      ]
+    }
+  ]
+}

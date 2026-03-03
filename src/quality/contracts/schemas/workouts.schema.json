@@ -1,0 +1,26 @@
+{
+  "description": "Contract for workout data at the Silver layer.",
+  "properties": {
+    "athlete_id": {
+      "minLength": 1,
+      "title": "Athlete Id",
+      "type": "string"
+    },
+    "workout_date": {
+      "description": "Date string (various formats accepted)",
+      "title": "Workout Date",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "athlete_id",
+    "workout_date",
+    "status"
+  ],
+  "title": "WorkoutContract",
+  "type": "object"
+}

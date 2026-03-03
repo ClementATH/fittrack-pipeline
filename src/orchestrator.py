@@ -42,6 +42,7 @@ from src.ingestion.file_ingestor import FileIngestor
 from src.monitor.alerter import Alerter
 from src.monitor.health_check import HealthChecker
 from src.quality.anomaly_detector import AnomalyDetector
+from src.quality.contracts.enforcer import ContractEnforcer
 from src.quality.profiler import DataProfiler
 from src.quality.reporter import QualityReporter
 from src.quality.scorer import QualityScorer
@@ -105,6 +106,7 @@ class PipelineOrchestrator:
         )
         self.scorer = QualityScorer()
         self.reporter = QualityReporter()
+        self.contract_enforcer = ContractEnforcer()
         self.alerter = Alerter(self.config.monitoring.alert_log_path)
 
         # Initialize warehouse schema
@@ -168,8 +170,7 @@ class PipelineOrchestrator:
         results["total_errors"] = total_errors
 
         logger.info(
-            f"=== PIPELINE RUN COMPLETE === "
-            f"Duration: {duration:.1f}s | Rows: {total_rows} | Errors: {total_errors}",
+            f"=== PIPELINE RUN COMPLETE === Duration: {duration:.1f}s | Rows: {total_rows} | Errors: {total_errors}",
             extra={"run_id": run_id},
         )
 
@@ -292,6 +293,18 @@ class PipelineOrchestrator:
             # Store Silver
             self.transformer.store_silver(enriched_df, source_name, endpoint_name)
 
+            # ── CONTRACT ENFORCEMENT ──
+            if endpoint_name in self.contract_enforcer.contracts:
+                contract_result = self.contract_enforcer.enforce(enriched_df, endpoint_name)
+                if not contract_result.passed:
+                    self.alerter.alert(
+                        "WARNING",
+                        source_name,
+                        f"Contract violations in {endpoint_name}: "
+                        f"{len(contract_result.violations)} violations "
+                        f"({contract_result.violation_rate:.1f}% of rows)",
+                    )
+
             # ── QUALITY CHECK ──
             quality_score = self._run_quality_checks(enriched_df, endpoint_name, run_id)
 
@@ -300,8 +313,7 @@ class PipelineOrchestrator:
                 self.alerter.alert(
                     "CRITICAL",
                     source_name,
-                    f"Quality score too low for {endpoint_name}: "
-                    f"{quality_score.overall}/100 ({quality_score.grade})",
+                    f"Quality score too low for {endpoint_name}: {quality_score.overall}/100 ({quality_score.grade})",
                 )
                 ep_result["status"] = "quality_failed"
                 ep_result["quality_score"] = quality_score.overall

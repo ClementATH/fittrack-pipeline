@@ -1,0 +1,68 @@
+{
+  "description": "Contract for body metrics at the Silver layer.",
+  "properties": {
+    "athlete_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Athlete Id"
+    },
+    "measured_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Measured At"
+    },
+    "weight_kg": {
+      "maximum": 300.0,
+      "minimum": 30.0,
+      "title": "Weight Kg",
+      "type": "number"
+    },
+    "body_fat_pct": {
+      "anyOf": [
+        {
+          "maximum": 60.0,
+          "minimum": 3.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Body Fat Pct"
+    },
+    "resting_heart_rate": {
+      "anyOf": [
+        {
+          "maximum": 120,
+          "minimum": 30,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resting Heart Rate"
+    }
+  },
+  "required": [
+    "weight_kg"
+  ],
+  "title": "BodyMetricContract",
+  "type": "object"
+}

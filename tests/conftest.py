@@ -22,7 +22,14 @@ import pytest
 # ============================================================
 
 PROJECT_ROOT = Path(__file__).parent.parent
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
 os.chdir(PROJECT_ROOT)
+
+
+@pytest.fixture
+def fixtures_dir() -> Path:
+    """Path to the test fixtures directory."""
+    return FIXTURES_DIR
 
 
 # ============================================================
