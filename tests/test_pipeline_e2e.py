@@ -17,24 +17,20 @@ across the full Bronze -> Silver -> Gold flow.
 """
 
 import json
-import shutil
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
-from src.transformation.cleaner import DataCleaner
-from src.transformation.transformer import DataTransformer
-from src.transformation.enricher import DataEnricher
-from src.quality.profiler import DataProfiler
-from src.quality.validator import DataValidator
 from src.quality.anomaly_detector import AnomalyDetector
-from src.quality.scorer import QualityScorer
+from src.quality.profiler import DataProfiler
 from src.quality.reporter import QualityReporter
+from src.quality.scorer import QualityScorer
+from src.quality.validator import DataValidator
+from src.transformation.cleaner import DataCleaner
+from src.transformation.enricher import DataEnricher
+from src.transformation.transformer import DataTransformer
 from src.warehouse.dim_builder import DimensionBuilder
-from src.warehouse.fact_builder import FactBuilder
 from src.warehouse.scd_handler import apply_scd_type2
-
 
 # ============================================================
 # Bronze -> Silver Integration
@@ -55,9 +51,7 @@ class TestBronzeToSilver:
         assert len(clean_df) == len(sample_exercises_df)
 
         # Transform
-        transformed_df = transformer.transform(
-            clean_df, source="wger_exercises", dataset="exercises"
-        )
+        transformed_df = transformer.transform(clean_df, source="wger_exercises", dataset="exercises")
         assert len(transformed_df) > 0
         assert "slug" in transformed_df.columns or "name" in transformed_df.columns
 
@@ -73,9 +67,7 @@ class TestBronzeToSilver:
         enricher = DataEnricher()
 
         clean_df = cleaner.clean(sample_workouts_df, table_name="workouts")
-        transformed_df = transformer.transform(
-            clean_df, source="file_drop_zone", dataset="workout_logs"
-        )
+        transformed_df = transformer.transform(clean_df, source="file_drop_zone", dataset="workout_logs")
         enriched_df = enricher.enrich(transformed_df, dataset="workouts")
 
         assert len(enriched_df) == len(sample_workouts_df)
@@ -101,19 +93,14 @@ class TestBronzeToSilver:
 class TestQualityPipeline:
     """Test the full quality check pipeline: profile -> validate -> detect -> score."""
 
-    def test_full_quality_flow_exercises(
-        self, sample_exercises_df: pd.DataFrame, sample_quality_rules: dict
-    ):
+    def test_full_quality_flow_exercises(self, sample_exercises_df: pd.DataFrame, sample_quality_rules: dict):
         """Full quality pipeline should produce a valid score for exercise data."""
         # First transform to get proper columns
-        cleaner = DataCleaner()
         transformer = DataTransformer()
         enricher = DataEnricher()
 
         # Skip the cleaner's dedup on this data since it contains list columns
-        transformed = transformer.transform(
-            sample_exercises_df, source="wger_exercises", dataset="exercises"
-        )
+        transformed = transformer.transform(sample_exercises_df, source="wger_exercises", dataset="exercises")
         enriched = enricher.enrich(transformed, dataset="exercises")
         # Drop duplicate columns
         enriched = enriched.loc[:, ~enriched.columns.duplicated()]
@@ -148,17 +135,13 @@ class TestQualityPipeline:
         assert score.grade in ("A+", "A", "B+", "B", "C", "D", "F")
         assert score.row_count == len(enriched)
 
-    def test_full_quality_flow_body_metrics(
-        self, sample_body_metrics_df: pd.DataFrame, sample_quality_rules: dict
-    ):
+    def test_full_quality_flow_body_metrics(self, sample_body_metrics_df: pd.DataFrame, sample_quality_rules: dict):
         """Full quality pipeline should produce a valid score for body metrics."""
         profiler = DataProfiler()
         profile = profiler.profile(sample_body_metrics_df, table_name="body_metrics")
 
         validator = DataValidator(sample_quality_rules)
-        validation_results = validator.validate(
-            sample_body_metrics_df, table_name="body_metrics"
-        )
+        validation_results = validator.validate(sample_body_metrics_df, table_name="body_metrics")
 
         detector = AnomalyDetector(min_sample_size=3)
         anomaly_results = detector.detect(sample_body_metrics_df)
@@ -184,9 +167,7 @@ class TestQualityPipeline:
         profile = profiler.profile(sample_body_metrics_df, table_name="body_metrics")
 
         validator = DataValidator(sample_quality_rules)
-        validation_results = validator.validate(
-            sample_body_metrics_df, table_name="body_metrics"
-        )
+        validation_results = validator.validate(sample_body_metrics_df, table_name="body_metrics")
 
         scorer = QualityScorer()
         score = scorer.score(
@@ -258,23 +239,28 @@ class TestGoldLayer:
 
     def test_scd_type2_detects_changes(self):
         """SCD Type 2 should create new versions when tracked columns change."""
-        existing = pd.DataFrame({
-            "slug": ["bench-press", "squat"],
-            "name": ["Bench Press", "Squat"],
-            "difficulty": ["beginner", "intermediate"],
-            "effective_from": ["2026-01-01", "2026-01-01"],
-            "effective_to": [None, None],
-            "is_current": [True, True],
-        })
+        existing = pd.DataFrame(
+            {
+                "slug": ["bench-press", "squat"],
+                "name": ["Bench Press", "Squat"],
+                "difficulty": ["beginner", "intermediate"],
+                "effective_from": ["2026-01-01", "2026-01-01"],
+                "effective_to": [None, None],
+                "is_current": [True, True],
+            }
+        )
 
-        incoming = pd.DataFrame({
-            "slug": ["bench-press", "squat"],
-            "name": ["Bench Press", "Squat"],
-            "difficulty": ["intermediate", "intermediate"],  # bench changed!
-        })
+        incoming = pd.DataFrame(
+            {
+                "slug": ["bench-press", "squat"],
+                "name": ["Bench Press", "Squat"],
+                "difficulty": ["intermediate", "intermediate"],  # bench changed!
+            }
+        )
 
         result = apply_scd_type2(
-            existing, incoming,
+            existing,
+            incoming,
             key_columns=["slug"],
             tracked_columns=["difficulty"],
         )
@@ -291,23 +277,28 @@ class TestGoldLayer:
 
     def test_scd_type2_no_changes(self):
         """SCD Type 2 with no changes should return the original data intact."""
-        existing = pd.DataFrame({
-            "slug": ["bench-press"],
-            "name": ["Bench Press"],
-            "difficulty": ["intermediate"],
-            "effective_from": ["2026-01-01"],
-            "effective_to": [None],
-            "is_current": [True],
-        })
+        existing = pd.DataFrame(
+            {
+                "slug": ["bench-press"],
+                "name": ["Bench Press"],
+                "difficulty": ["intermediate"],
+                "effective_from": ["2026-01-01"],
+                "effective_to": [None],
+                "is_current": [True],
+            }
+        )
 
-        incoming = pd.DataFrame({
-            "slug": ["bench-press"],
-            "name": ["Bench Press"],
-            "difficulty": ["intermediate"],  # No change
-        })
+        incoming = pd.DataFrame(
+            {
+                "slug": ["bench-press"],
+                "name": ["Bench Press"],
+                "difficulty": ["intermediate"],  # No change
+            }
+        )
 
         result = apply_scd_type2(
-            existing, incoming,
+            existing,
+            incoming,
             key_columns=["slug"],
             tracked_columns=["difficulty"],
         )
@@ -344,9 +335,7 @@ class TestFileToGoldFlow:
 
         # Transform
         transformer = DataTransformer()
-        transformed = transformer.transform(
-            clean_df, source="file_drop_zone", dataset="workout_logs"
-        )
+        transformed = transformer.transform(clean_df, source="file_drop_zone", dataset="workout_logs")
 
         # Enrich
         enricher = DataEnricher()
@@ -360,8 +349,14 @@ class TestFileToGoldFlow:
     def test_json_file_to_enriched_data(self, tmp_path: Path):
         """A JSON file should flow through the entire pipeline."""
         data = [
-            {"log_date": "2026-02-20", "meal_type": "breakfast", "calories": 500,
-             "protein_g": 35, "carbs_g": 40, "fats_g": 20},
+            {
+                "log_date": "2026-02-20",
+                "meal_type": "breakfast",
+                "calories": 500,
+                "protein_g": 35,
+                "carbs_g": 40,
+                "fats_g": 20,
+            },
         ]
         json_path = tmp_path / "test_nutrition.json"
         json_path.write_text(json.dumps(data))

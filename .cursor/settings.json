@@ -1,0 +1,20 @@
+{
+  "python.defaultInterpreterPath": "python3",
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/data/bronze/**": false,
+    "**/data/silver/**": false,
+    "**/data/gold/**": false,
+    "**/*.duckdb": true,
+    "**/*.duckdb.wal": true
+  },
+  "search.exclude": {
+    "**/data/bronze": true,
+    "**/data/silver": true,
+    "**/data/gold": true,
+    "**/*.parquet": true,
+    "**/logs": true
+  }
+}

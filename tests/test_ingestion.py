@@ -14,7 +14,6 @@ FileIngestor file reading and processing, and Parquet storage.
 """
 
 import json
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -23,7 +22,6 @@ import pytest
 
 from src.ingestion.file_ingestor import FileIngestor
 from src.utils.config_loader import SourceConfig
-
 
 # ============================================================
 # Fixtures
@@ -61,9 +59,7 @@ def file_ingestor(file_source_config: SourceConfig, tmp_data_dir: Path) -> FileI
 class TestBaseIngestorMetadata:
     """Test metadata enrichment provided by BaseIngestor."""
 
-    def test_add_metadata_adds_required_columns(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_add_metadata_adds_required_columns(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """Metadata enrichment adds _ingested_at, _source_name, _batch_id, _source_hash."""
         result = file_ingestor.add_metadata(sample_exercises_df)
 
@@ -80,23 +76,17 @@ class TestBaseIngestorMetadata:
         result = file_ingestor.add_metadata(sample_exercises_df)
         assert original_cols.issubset(set(result.columns))
 
-    def test_add_metadata_source_name_matches(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_add_metadata_source_name_matches(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """The _source_name should match the ingestor's source_name."""
         result = file_ingestor.add_metadata(sample_exercises_df)
         assert (result["_source_name"] == "test_file_zone").all()
 
-    def test_add_metadata_batch_id_consistent(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_add_metadata_batch_id_consistent(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """All rows in a batch should share the same batch_id."""
         result = file_ingestor.add_metadata(sample_exercises_df, batch_id="test-batch-123")
         assert (result["_batch_id"] == "test-batch-123").all()
 
-    def test_add_metadata_hash_uniqueness(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_add_metadata_hash_uniqueness(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """Each unique row should get a unique hash."""
         result = file_ingestor.add_metadata(sample_exercises_df)
         assert result["_source_hash"].nunique() == len(result)
@@ -126,17 +116,13 @@ class TestBronzeStorage:
         assert path.exists()
         assert path.suffix == ".parquet"
 
-    def test_store_bronze_parquet_readable(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_store_bronze_parquet_readable(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """The stored Parquet file should be readable by PyArrow."""
         path = file_ingestor.store_bronze(sample_exercises_df, "exercises", "test-batch")
         table = pq.read_table(path)
         assert table.num_rows == len(sample_exercises_df)
 
-    def test_store_bronze_preserves_data(
-        self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame
-    ):
+    def test_store_bronze_preserves_data(self, file_ingestor: FileIngestor, sample_exercises_df: pd.DataFrame):
         """Data written to Parquet should be identical when read back."""
         path = file_ingestor.store_bronze(sample_exercises_df, "exercises")
         df_read = pd.read_parquet(path)
@@ -190,9 +176,7 @@ class TestFileIngestor:
         assert len(df) == 1
         assert df.iloc[0]["name"] == "Pull-up"
 
-    def test_discover_files_finds_supported_formats(
-        self, file_ingestor: FileIngestor, tmp_data_dir: Path
-    ):
+    def test_discover_files_finds_supported_formats(self, file_ingestor: FileIngestor, tmp_data_dir: Path):
         """File discovery should find CSV and JSON files."""
         (tmp_data_dir / "incoming" / "a.csv").write_text("col\n1")
         (tmp_data_dir / "incoming" / "b.json").write_text("[]")

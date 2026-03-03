@@ -22,10 +22,10 @@ read 50 validation results — they want "is this data trustworthy?"
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, ClassVar
 
-from src.quality.validator import ValidationResult
 from src.quality.anomaly_detector import AnomalyResult
+from src.quality.validator import ValidationResult
 from src.utils.logger import get_logger
 
 logger = get_logger("fittrack.quality.scorer")
@@ -110,7 +110,7 @@ class QualityScorer:
     """
 
     # Weight of each dimension in the overall score
-    WEIGHTS = {
+    WEIGHTS: ClassVar[dict[str, float]] = {
         "completeness": 0.30,
         "accuracy": 0.30,
         "consistency": 0.20,
@@ -200,9 +200,7 @@ class QualityScorer:
         score = 100.0
 
         # Deduct for missing required columns (critical)
-        schema_results = [
-            r for r in results if r.rule_name.startswith("schema_required_column")
-        ]
+        schema_results = [r for r in results if r.rule_name.startswith("schema_required_column")]
         if schema_results:
             missing = sum(1 for r in schema_results if not r.passed)
             if missing > 0:
@@ -231,8 +229,7 @@ class QualityScorer:
 
         # Business rule failures
         business_results = [
-            r for r in results
-            if not r.rule_name.startswith("schema_") and not r.rule_name.startswith("freshness_")
+            r for r in results if not r.rule_name.startswith("schema_") and not r.rule_name.startswith("freshness_")
         ]
 
         if business_results:

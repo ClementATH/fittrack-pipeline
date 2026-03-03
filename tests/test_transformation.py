@@ -9,13 +9,14 @@ Tests for the transformation module: DataCleaner, DataTransformer, DataEnricher.
 # important tests because wrong transformations = wrong dashboards.
 """
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
 from src.transformation.cleaner import DataCleaner
-from src.transformation.transformer import DataTransformer, WGER_MUSCLE_MAP, WGER_EQUIPMENT_MAP
 from src.transformation.enricher import DataEnricher
-
+from src.transformation.transformer import WGER_EQUIPMENT_MAP, WGER_MUSCLE_MAP, DataTransformer
 
 # ============================================================
 # DataCleaner Tests
@@ -79,8 +80,8 @@ class TestDataCleaner:
         df = pd.DataFrame({"weight": [100.0, None, 80.0], "name": ["a", None, "c"]})
         result = DataCleaner.handle_nulls(df, numeric_fill=0.0)
         assert result["weight"].iloc[1] == 0.0
-        # String nulls should remain
-        assert result["name"].iloc[1] is None
+        # String nulls should remain as NaN/None
+        assert pd.isna(result["name"].iloc[1])
 
     def test_handle_nulls_no_fill_preserves_nulls(self):
         """Without fill values, nulls should remain."""
@@ -92,7 +93,8 @@ class TestDataCleaner:
         """String casting should work correctly."""
         df = pd.DataFrame({"id": [1, 2, 3]})
         result = DataCleaner.cast_types(df, {"id": "string"})
-        assert result["id"].dtype == object
+        # pandas 3.x uses StringDtype instead of object for string casting
+        assert pd.api.types.is_string_dtype(result["id"])
 
     def test_cast_types_integer(self):
         """Integer casting should handle nullable integers."""
@@ -120,19 +122,23 @@ class TestDataCleaner:
 
     def test_deduplicate_keeps_last_by_default(self):
         """By default, the last duplicate should be kept."""
-        df = pd.DataFrame({
-            "name": ["Squat", "Squat"],
-            "version": [1, 2],
-        })
+        df = pd.DataFrame(
+            {
+                "name": ["Squat", "Squat"],
+                "version": [1, 2],
+            }
+        )
         result = DataCleaner.deduplicate(df, subset=["name"], keep="last")
         assert result["version"].iloc[0] == 2
 
     def test_deduplicate_ignores_metadata_columns(self):
         """Columns starting with '_' should be excluded from dedup comparison."""
-        df = pd.DataFrame({
-            "name": ["Squat", "Squat"],
-            "_batch_id": ["batch1", "batch2"],
-        })
+        df = pd.DataFrame(
+            {
+                "name": ["Squat", "Squat"],
+                "_batch_id": ["batch1", "batch2"],
+            }
+        )
         result = DataCleaner.deduplicate(df)
         # Both rows have same "name" so one should be removed
         assert len(result) == 1
@@ -253,8 +259,12 @@ class TestDataEnricher:
         result = enricher.enrich_exercises(transformed)
         assert "movement_category" in result.columns
         valid_categories = {
-            "upper_body_push", "upper_body_pull", "lower_body",
-            "core", "full_body", "other",
+            "upper_body_push",
+            "upper_body_pull",
+            "lower_body",
+            "core",
+            "full_body",
+            "other",
         }
         for cat in result["movement_category"]:
             assert cat in valid_categories

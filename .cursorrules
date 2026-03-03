@@ -1,0 +1,55 @@
+# FitTrack Pro ETL Pipeline — Cursor Rules
+
+## Project Context
+This is a production-grade ETL pipeline using the Medallion Architecture (Bronze/Silver/Gold).
+Tech stack: Python 3.10+, DuckDB, Parquet, Pydantic, pandas, httpx, Rich, Streamlit.
+
+## Code Style
+- Use type hints on ALL function signatures and return types
+- Use snake_case for variables, functions, columns, and file names
+- Write docstrings that explain WHAT and WHY (not just HOW)
+- Keep functions focused — one responsibility per function
+- Prefer explicit over implicit; avoid magic numbers and strings
+
+## Architecture Rules
+- All configuration goes in `config/*.yaml` — never hardcode settings in Python
+- Use Pydantic models for config validation (`src/utils/config_loader.py`)
+- Follow the Medallion pattern: Bronze (raw) → Silver (clean) → Gold (modeled)
+- New data sources implement `BaseIngestor` (Strategy pattern) in `src/ingestion/`
+- New transforms go in `src/transformation/` (cleaner, transformer, or enricher)
+- Quality rules are defined in `config/quality_rules.yaml`, not in code
+- The orchestrator (`src/orchestrator.py`) is the only entry point for pipeline runs
+
+## File Organization
+- Source code: `src/` (ingestion, transformation, warehouse, quality, monitor, utils)
+- Tests: `tests/` — mirror the src/ structure, use pytest fixtures from conftest.py
+- Config: `config/` — YAML files for pipeline settings, quality rules, sources
+- Data: `data/` — bronze/, silver/, gold/ layers plus sample/ for demo data
+- Docs: `docs/` — architecture, guides, glossary
+
+## Testing Conventions
+- All tests in `tests/` using pytest
+- Shared fixtures in `tests/conftest.py`
+- Use `tmp_path` fixture for file operations — never write to real data dirs in tests
+- Mock external dependencies (APIs, file system) with pytest-mock
+- Test naming: `test_<what>_<condition>_<expected>` (e.g., `test_cleaner_removes_duplicates`)
+
+## Data Conventions
+- Parquet for all intermediate storage (Bronze and Silver layers)
+- DuckDB for the Gold analytical warehouse
+- Metadata columns prefixed with `_` (e.g., `_ingested_at`, `_source_name`)
+- Quality scores range 0-100, gate threshold is 50
+
+## When Generating Code
+- Import from `src.*` using absolute imports
+- Log with `get_logger(__name__)` from `src.utils.logger`
+- Handle errors gracefully — log the error, don't crash the pipeline
+- Use `Path` objects (not string paths) for file operations
+- Add new dependencies to `pyproject.toml`, not requirements.txt
+
+## Do NOT
+- Create new files when editing existing ones would work
+- Add dependencies without checking if an existing one covers the need
+- Write to `data/bronze/`, `data/silver/`, or `data/gold/` in tests
+- Hardcode file paths, API URLs, or thresholds — use config
+- Skip type hints or docstrings on public functions

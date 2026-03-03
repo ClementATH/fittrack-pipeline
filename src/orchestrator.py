@@ -28,38 +28,37 @@ Usage:
     python -m src.orchestrator --quality-only   # Run quality checks only
 """
 
-import json
-import time
-import uuid
 import argparse
+import json
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from src.utils.logger import setup_logger, get_logger
-from src.utils.config_loader import (
-    load_pipeline_config,
-    load_source_configs,
-    load_quality_rules,
-)
-from src.utils.db_connector import DuckDBConnector
 from src.ingestion.api_ingestor import APIIngestor
 from src.ingestion.file_ingestor import FileIngestor
+from src.monitor.alerter import Alerter
+from src.monitor.health_check import HealthChecker
+from src.quality.anomaly_detector import AnomalyDetector
+from src.quality.profiler import DataProfiler
+from src.quality.reporter import QualityReporter
+from src.quality.scorer import QualityScorer
+from src.quality.validator import DataValidator
 from src.transformation.cleaner import DataCleaner
-from src.transformation.transformer import DataTransformer
 from src.transformation.enricher import DataEnricher
+from src.transformation.transformer import DataTransformer
+from src.utils.config_loader import (
+    load_pipeline_config,
+    load_quality_rules,
+    load_source_configs,
+)
+from src.utils.db_connector import DuckDBConnector
+from src.utils.logger import get_logger, setup_logger
 from src.warehouse.dim_builder import DimensionBuilder
 from src.warehouse.fact_builder import FactBuilder
 from src.warehouse.scd_handler import apply_scd_type2
-from src.quality.profiler import DataProfiler
-from src.quality.validator import DataValidator
-from src.quality.anomaly_detector import AnomalyDetector
-from src.quality.scorer import QualityScorer
-from src.quality.reporter import QualityReporter
-from src.monitor.alerter import Alerter
-from src.monitor.health_check import HealthChecker
 
 logger = get_logger("fittrack.orchestrator")
 
@@ -162,12 +161,8 @@ class PipelineOrchestrator:
         results["duration_seconds"] = round(duration, 2)
 
         # Count totals
-        total_rows = sum(
-            r.get("rows_processed", 0) for r in results["sources"].values()
-        )
-        total_errors = sum(
-            1 for r in results["sources"].values() if r.get("status") == "error"
-        )
+        total_rows = sum(r.get("rows_processed", 0) for r in results["sources"].values())
+        total_errors = sum(1 for r in results["sources"].values() if r.get("status") == "error")
 
         results["total_rows_processed"] = total_rows
         results["total_errors"] = total_errors
@@ -236,9 +231,7 @@ class PipelineOrchestrator:
             endpoints = list(source_config.endpoints.keys()) if source_config.endpoints else ["default"]
 
             for endpoint_name in endpoints:
-                ep_result = self._process_endpoint(
-                    ingestor, source_name, endpoint_name, run_id
-                )
+                ep_result = self._process_endpoint(ingestor, source_name, endpoint_name, run_id)
                 result["endpoints"][endpoint_name] = ep_result
                 result["rows_processed"] += ep_result.get("rows_processed", 0)
 
@@ -246,9 +239,7 @@ class PipelineOrchestrator:
 
         except Exception as e:
             result["error"] = str(e)
-            self.alerter.alert(
-                "CRITICAL", source_name, f"Source processing failed: {e}"
-            )
+            self.alerter.alert("CRITICAL", source_name, f"Source processing failed: {e}")
             logger.error(f"Source {source_name} failed: {e}", exc_info=True)
 
         # Log the run to the database
@@ -292,23 +283,17 @@ class PipelineOrchestrator:
             clean_df = self.cleaner.clean(raw_df, table_name=endpoint_name)
 
             # Step 2: Transform (source-specific)
-            transformed_df = self.transformer.transform(
-                clean_df, source=source_name, dataset=endpoint_name
-            )
+            transformed_df = self.transformer.transform(clean_df, source=source_name, dataset=endpoint_name)
 
             # Step 3: Enrich
             dataset_type = self._map_endpoint_to_dataset(endpoint_name)
             enriched_df = self.enricher.enrich(transformed_df, dataset=dataset_type)
 
             # Store Silver
-            silver_path = self.transformer.store_silver(
-                enriched_df, source_name, endpoint_name
-            )
+            self.transformer.store_silver(enriched_df, source_name, endpoint_name)
 
             # ── QUALITY CHECK ──
-            quality_score = self._run_quality_checks(
-                enriched_df, endpoint_name, run_id
-            )
+            quality_score = self._run_quality_checks(enriched_df, endpoint_name, run_id)
 
             # Only proceed to Gold if quality passes threshold
             if quality_score.overall < 50:
@@ -386,12 +371,9 @@ class PipelineOrchestrator:
         }
         return mapping.get(endpoint_name, endpoint_name)
 
-    def _load_to_gold(
-        self, df: pd.DataFrame, source_name: str, endpoint_name: str
-    ) -> None:
+    def _load_to_gold(self, df: pd.DataFrame, source_name: str, endpoint_name: str) -> None:
         """Load data into Gold layer (dimensions or facts based on endpoint)."""
         dim_endpoints = {"exercises", "muscles", "equipment"}
-        fact_endpoints = {"workouts", "workout_logs", "body_metrics", "nutrition_logs", "foods_search"}
 
         if endpoint_name in dim_endpoints:
             # Try SCD Type 2 if existing dimension exists
@@ -402,7 +384,8 @@ class PipelineOrchestrator:
 
             if existing is not None and "slug" in df.columns:
                 result = apply_scd_type2(
-                    existing, df,
+                    existing,
+                    df,
                     key_columns=["slug"],
                     tracked_columns=["name", "primary_muscle", "equipment", "difficulty"],
                 )
@@ -426,9 +409,7 @@ class PipelineOrchestrator:
         self.dim_builder.build_dim_muscle_groups()
         self.dim_builder.build_dim_athletes()
 
-    def _run_quality_checks(
-        self, df: pd.DataFrame, table_name: str, run_id: str
-    ) -> Any:
+    def _run_quality_checks(self, df: pd.DataFrame, table_name: str, run_id: str) -> Any:
         """Run full quality suite: profile -> validate -> anomaly -> score -> report."""
         # Profile
         profile = self.profiler.profile(df, table_name=table_name)
@@ -437,12 +418,8 @@ class PipelineOrchestrator:
         validation_results = self.validator.validate(df, table_name=table_name)
 
         # Anomaly detection on numeric columns
-        monitor_cols = self.quality_rules.get("anomaly_detection", {}).get(
-            "columns_to_monitor", {}
-        ).get(table_name, [])
-        anomaly_results = self.anomaly_detector.detect(
-            df, columns=monitor_cols if monitor_cols else None
-        )
+        monitor_cols = self.quality_rules.get("anomaly_detection", {}).get("columns_to_monitor", {}).get(table_name, [])
+        anomaly_results = self.anomaly_detector.detect(df, columns=monitor_cols if monitor_cols else None)
 
         # Score
         null_pct = profile["summary"]["null_percentage"]
@@ -466,20 +443,24 @@ class PipelineOrchestrator:
 
         # Store quality score in DuckDB
         try:
-            score_df = pd.DataFrame([{
-                "id": quality_score.id,
-                "table_name": quality_score.table_name,
-                "run_id": run_id,
-                "scored_at": quality_score.scored_at,
-                "overall_score": quality_score.overall,
-                "completeness_score": quality_score.completeness,
-                "accuracy_score": quality_score.accuracy,
-                "consistency_score": quality_score.consistency,
-                "timeliness_score": quality_score.timeliness,
-                "row_count": quality_score.row_count,
-                "failed_checks": quality_score.failed_checks,
-                "details": json.dumps(quality_score.details),
-            }])
+            score_df = pd.DataFrame(
+                [
+                    {
+                        "id": quality_score.id,
+                        "table_name": quality_score.table_name,
+                        "run_id": run_id,
+                        "scored_at": quality_score.scored_at,
+                        "overall_score": quality_score.overall,
+                        "completeness_score": quality_score.completeness,
+                        "accuracy_score": quality_score.accuracy,
+                        "consistency_score": quality_score.consistency,
+                        "timeliness_score": quality_score.timeliness,
+                        "row_count": quality_score.row_count,
+                        "failed_checks": quality_score.failed_checks,
+                        "details": json.dumps(quality_score.details),
+                    }
+                ]
+            )
             self.db.load_dataframe("quality_scores", score_df, mode="append")
         except Exception as e:
             logger.warning(f"Failed to store quality score: {e}")
@@ -513,24 +494,26 @@ class PipelineOrchestrator:
                     f"Health check failed: {r.name} — {r.message}",
                 )
 
-    def _log_pipeline_run(
-        self, run_id: str, source_name: str, layer: str, result: dict
-    ) -> None:
+    def _log_pipeline_run(self, run_id: str, source_name: str, layer: str, result: dict) -> None:
         """Log a pipeline run to the database."""
         try:
-            run_df = pd.DataFrame([{
-                "run_id": run_id,
-                "pipeline_name": self.config.name,
-                "source_name": source_name,
-                "layer": layer,
-                "status": result.get("status", "error"),
-                "started_at": datetime.now(timezone.utc).isoformat(),
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-                "rows_processed": result.get("rows_processed", 0),
-                "rows_failed": 0,
-                "error_message": result.get("error"),
-                "metadata": json.dumps({"endpoints": list(result.get("endpoints", {}).keys())}),
-            }])
+            run_df = pd.DataFrame(
+                [
+                    {
+                        "run_id": run_id,
+                        "pipeline_name": self.config.name,
+                        "source_name": source_name,
+                        "layer": layer,
+                        "status": result.get("status", "error"),
+                        "started_at": datetime.now(timezone.utc).isoformat(),
+                        "completed_at": datetime.now(timezone.utc).isoformat(),
+                        "rows_processed": result.get("rows_processed", 0),
+                        "rows_failed": 0,
+                        "error_message": result.get("error"),
+                        "metadata": json.dumps({"endpoints": list(result.get("endpoints", {}).keys())}),
+                    }
+                ]
+            )
             self.db.load_dataframe("pipeline_runs", run_df, mode="append")
         except Exception as e:
             logger.warning(f"Failed to log pipeline run: {e}")
@@ -552,6 +535,7 @@ class PipelineOrchestrator:
 # ============================================================
 # CLI Entry Point
 # ============================================================
+
 
 def main():
     """Command-line entry point for the pipeline."""

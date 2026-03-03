@@ -24,9 +24,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.quality.anomaly_detector import AnomalyResult
 from src.quality.scorer import QualityScore
 from src.quality.validator import ValidationResult
-from src.quality.anomaly_detector import AnomalyResult
 from src.utils.logger import get_logger
 
 logger = get_logger("fittrack.quality.reporter")
@@ -113,8 +113,13 @@ class QualityReporter:
     ) -> str:
         """Generate report header with key metrics."""
         grade_emoji = {
-            "A+": "[A+]", "A": "[A]", "B+": "[B+]", "B": "[B]",
-            "C": "[C]", "D": "[D]", "F": "[F]",
+            "A+": "[A+]",
+            "A": "[A]",
+            "B+": "[B+]",
+            "B": "[B]",
+            "C": "[C]",
+            "D": "[D]",
+            "F": "[F]",
         }
         emoji = grade_emoji.get(score.grade, "[-]")
 
@@ -123,8 +128,8 @@ class QualityReporter:
             "",
             f"**Overall Score: {score.overall}/100 {emoji} Grade: {score.grade}**",
             "",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Table | {table_name} |",
             f"| Rows | {score.row_count:,} |",
             f"| Score | {score.overall}/100 |",
@@ -140,6 +145,7 @@ class QualityReporter:
     @staticmethod
     def _score_summary(score: QualityScore) -> str:
         """Generate score breakdown section."""
+
         def bar(value: float, width: int = 20) -> str:
             filled = int(value / 100 * width)
             return "[" + "#" * filled + "." * (width - filled) + "]"
@@ -166,8 +172,7 @@ class QualityReporter:
         lines = [
             "## Validation Results",
             "",
-            f"**{len(passed)} passed, {len(failed)} failed "
-            f"out of {len(results)} checks**",
+            f"**{len(passed)} passed, {len(failed)} failed " f"out of {len(results)} checks**",
             "",
         ]
 
@@ -178,8 +183,7 @@ class QualityReporter:
             lines.append("|------|----------|--------|---------|--------------|")
             for r in sorted(failed, key=lambda x: {"CRITICAL": 0, "WARNING": 1, "INFO": 2}.get(x.severity, 3)):
                 lines.append(
-                    f"| {r.rule_name} | {r.severity} | {r.column or '-'} | "
-                    f"{r.message} | {r.failing_rows} |"
+                    f"| {r.rule_name} | {r.severity} | {r.column or '-'} | " f"{r.message} | {r.failing_rows} |"
                 )
             lines.append("")
 

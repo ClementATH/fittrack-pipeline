@@ -15,11 +15,10 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from src.quality.profiler import DataProfiler
-from src.quality.validator import DataValidator, ValidationResult
 from src.quality.anomaly_detector import AnomalyDetector, AnomalyResult
-from src.quality.scorer import QualityScorer, QualityScore
-
+from src.quality.profiler import DataProfiler
+from src.quality.scorer import QualityScore, QualityScorer
+from src.quality.validator import DataValidator, ValidationResult
 
 # ============================================================
 # DataProfiler Tests
@@ -121,23 +120,21 @@ class TestDataProfiler:
 class TestDataValidator:
     """Test YAML-driven data validation."""
 
-    def test_validate_schema_required_columns_present(
-        self, sample_quality_rules: dict[str, Any]
-    ):
+    def test_validate_schema_required_columns_present(self, sample_quality_rules: dict[str, Any]):
         """When all required columns are present, schema check should pass."""
-        df = pd.DataFrame({
-            "name": ["Squat"],
-            "primary_muscle": ["quads"],
-            "exercise_type": ["compound"],
-        })
+        df = pd.DataFrame(
+            {
+                "name": ["Squat"],
+                "primary_muscle": ["quads"],
+                "exercise_type": ["compound"],
+            }
+        )
         validator = DataValidator(sample_quality_rules)
         results = validator.validate(df, table_name="exercises")
         schema_results = [r for r in results if r.rule_name.startswith("schema_required")]
         assert all(r.passed for r in schema_results)
 
-    def test_validate_schema_missing_column(
-        self, sample_quality_rules: dict[str, Any]
-    ):
+    def test_validate_schema_missing_column(self, sample_quality_rules: dict[str, Any]):
         """Missing required columns should fail schema validation."""
         df = pd.DataFrame({"name": ["Squat"]})  # Missing primary_muscle, exercise_type
         validator = DataValidator(sample_quality_rules)
@@ -146,15 +143,15 @@ class TestDataValidator:
         failed = [r for r in schema_results if not r.passed]
         assert len(failed) >= 2
 
-    def test_validate_business_rule_not_empty(
-        self, sample_quality_rules: dict[str, Any]
-    ):
+    def test_validate_business_rule_not_empty(self, sample_quality_rules: dict[str, Any]):
         """not_empty check should fail when column has empty strings."""
-        df = pd.DataFrame({
-            "name": ["Squat", "", "Bench"],
-            "primary_muscle": ["quads", "chest", "chest"],
-            "exercise_type": ["compound", "compound", "compound"],
-        })
+        df = pd.DataFrame(
+            {
+                "name": ["Squat", "", "Bench"],
+                "primary_muscle": ["quads", "chest", "chest"],
+                "exercise_type": ["compound", "compound", "compound"],
+            }
+        )
         validator = DataValidator(sample_quality_rules)
         results = validator.validate(df, table_name="exercises")
         name_result = [r for r in results if r.rule_name == "name_not_empty"]
@@ -162,29 +159,29 @@ class TestDataValidator:
         assert not name_result[0].passed
         assert name_result[0].failing_rows == 1
 
-    def test_validate_business_rule_in_set(
-        self, sample_quality_rules: dict[str, Any]
-    ):
+    def test_validate_business_rule_in_set(self, sample_quality_rules: dict[str, Any]):
         """in_set check should fail for values not in the allowed set."""
-        df = pd.DataFrame({
-            "name": ["Squat"],
-            "primary_muscle": ["quads"],
-            "exercise_type": ["INVALID_TYPE"],
-        })
+        df = pd.DataFrame(
+            {
+                "name": ["Squat"],
+                "primary_muscle": ["quads"],
+                "exercise_type": ["INVALID_TYPE"],
+            }
+        )
         validator = DataValidator(sample_quality_rules)
         results = validator.validate(df, table_name="exercises")
         set_result = [r for r in results if r.rule_name == "valid_exercise_type"]
         assert len(set_result) == 1
         assert not set_result[0].passed
 
-    def test_validate_business_rule_range(
-        self, sample_quality_rules: dict[str, Any]
-    ):
+    def test_validate_business_rule_range(self, sample_quality_rules: dict[str, Any]):
         """Range check should flag values outside min/max bounds."""
-        df = pd.DataFrame({
-            "weight_kg": [80.0, 500.0, 25.0],  # 500 > 300, 25 < 30
-            "body_fat_pct": [15.0, 20.0, 25.0],
-        })
+        df = pd.DataFrame(
+            {
+                "weight_kg": [80.0, 500.0, 25.0],  # 500 > 300, 25 < 30
+                "body_fat_pct": [15.0, 20.0, 25.0],
+            }
+        )
         validator = DataValidator(sample_quality_rules)
         results = validator.validate(df, table_name="body_metrics")
         weight_result = [r for r in results if r.rule_name == "weight_reasonable"]
@@ -280,11 +277,13 @@ class TestAnomalyDetector:
 
     def test_auto_detect_numeric_columns(self):
         """Without specifying columns, should auto-detect numeric columns."""
-        df = pd.DataFrame({
-            "weight": list(range(20)),
-            "name": ["a"] * 20,
-            "reps": list(range(20)),
-        })
+        df = pd.DataFrame(
+            {
+                "weight": list(range(20)),
+                "name": ["a"] * 20,
+                "reps": list(range(20)),
+            }
+        )
         detector = AnomalyDetector(min_sample_size=5)
         results = detector.detect(df)
         checked_cols = {r.column for r in results}
@@ -302,8 +301,11 @@ class TestAnomalyDetector:
     def test_anomaly_result_to_dict(self):
         """AnomalyResult.to_dict() should produce a valid dictionary."""
         result = AnomalyResult(
-            column="test", method="z_score",
-            anomaly_count=2, total_count=100, threshold=3.0,
+            column="test",
+            method="z_score",
+            anomaly_count=2,
+            total_count=100,
+            threshold=3.0,
         )
         d = result.to_dict()
         assert d["column"] == "test"

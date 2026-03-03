@@ -31,7 +31,7 @@ import logging
 import logging.handlers
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 
 class JSONFormatter(logging.Formatter):
@@ -45,9 +45,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(
-                record.created, tz=timezone.utc
-            ).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -82,11 +80,11 @@ class ConsoleFormatter(logging.Formatter):
     Uses simple formatting without external dependencies.
     """
 
-    COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+    COLORS: ClassVar[dict[str, str]] = {
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[41m",  # Red background
     }
     RESET = "\033[0m"
@@ -105,10 +103,7 @@ class ConsoleFormatter(logging.Formatter):
         if context:
             context = f" {context}"
 
-        return (
-            f"{color}{timestamp} {record.levelname:<8}{self.RESET}"
-            f"{context} {record.getMessage()}"
-        )
+        return f"{color}{timestamp} {record.levelname:<8}{self.RESET}" f"{context} {record.getMessage()}"
 
 
 def setup_logger(

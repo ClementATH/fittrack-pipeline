@@ -119,9 +119,7 @@ class DimensionBuilder:
         df["is_current"] = True
 
         # Select final columns
-        dim_cols = list(defaults.keys()) + [
-            "id", "effective_from", "effective_to", "is_current",
-        ]
+        dim_cols = [*defaults.keys(), "id", "effective_from", "effective_to", "is_current"]
         # Add any enrichment columns that exist
         for col in ["compound_score", "movement_category"]:
             if col in df.columns:
@@ -144,18 +142,22 @@ class DimensionBuilder:
             df = silver_df.copy()
         else:
             # Create from our known seed data
-            df = pd.DataFrame([{
-                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                "email": "marcus.chen@email.com",
-                "username": "marcuslifts",
-                "full_name": "Marcus Chen",
-                "date_of_birth": "1997-03-15",
-                "gender": "male",
-                "height_cm": 180.3,
-                "target_weight_kg": 81.6,
-                "activity_level": "very_active",
-                "training_experience_years": 6,
-            }])
+            df = pd.DataFrame(
+                [
+                    {
+                        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                        "email": "marcus.chen@email.com",
+                        "username": "marcuslifts",
+                        "full_name": "Marcus Chen",
+                        "date_of_birth": "1997-03-15",
+                        "gender": "male",
+                        "height_cm": 180.3,
+                        "target_weight_kg": 81.6,
+                        "activity_level": "very_active",
+                        "training_experience_years": 6,
+                    }
+                ]
+            )
 
         now = datetime.now(timezone.utc).isoformat()
         df["effective_from"] = now
@@ -194,24 +196,26 @@ class DimensionBuilder:
         """
         dates = pd.date_range(start=start_date, end=end_date, freq="D")
 
-        df = pd.DataFrame({
-            "date_key": dates.strftime("%Y-%m-%d"),
-            "full_date": dates,
-            "year": dates.year,
-            "quarter": dates.quarter,
-            "month": dates.month,
-            "month_name": dates.strftime("%B"),
-            "week_of_year": dates.isocalendar().week.astype(int),
-            "day_of_month": dates.day,
-            "day_of_week": dates.dayofweek,  # 0=Monday, 6=Sunday
-            "day_name": dates.strftime("%A"),
-            "is_weekday": dates.dayofweek < 5,
-            "is_weekend": dates.dayofweek >= 5,
-            "is_month_start": dates.is_month_start,
-            "is_month_end": dates.is_month_end,
-            "fiscal_year": dates.year,  # Customize for your org's fiscal year
-            "fiscal_quarter": dates.quarter,
-        })
+        df = pd.DataFrame(
+            {
+                "date_key": dates.strftime("%Y-%m-%d"),
+                "full_date": dates,
+                "year": dates.year,
+                "quarter": dates.quarter,
+                "month": dates.month,
+                "month_name": dates.strftime("%B"),
+                "week_of_year": dates.isocalendar().week.astype(int),
+                "day_of_month": dates.day,
+                "day_of_week": dates.dayofweek,  # 0=Monday, 6=Sunday
+                "day_name": dates.strftime("%A"),
+                "is_weekday": dates.dayofweek < 5,
+                "is_weekend": dates.dayofweek >= 5,
+                "is_month_start": dates.is_month_start,
+                "is_month_end": dates.is_month_end,
+                "fiscal_year": dates.year,  # Customize for your org's fiscal year
+                "fiscal_quarter": dates.quarter,
+            }
+        )
 
         self._store_dimension(df, "dim_date")
         logger.info(f"Built dim_date: {len(df)} days ({start_date} to {end_date})")

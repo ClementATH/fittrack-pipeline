@@ -27,9 +27,10 @@ What Would Break If you didn't use a connection manager:
   - Errors during queries would leave connections in a bad state
 """
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import duckdb
 import pandas as pd
@@ -142,10 +143,7 @@ class DuckDBConnector:
 
         with self.connection() as conn:
             # CREATE OR REPLACE TABLE ... AS SELECT * FROM parquet file
-            conn.execute(
-                f"CREATE OR REPLACE TABLE {table_name} AS "
-                f"SELECT * FROM read_parquet('{parquet_path}')"
-            )
+            conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS " f"SELECT * FROM read_parquet('{parquet_path}')")
             count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
             logger.info(f"Loaded {count} rows from {parquet_path} into {table_name}")
             return count
@@ -169,17 +167,13 @@ class DuckDBConnector:
         """
         with self.connection() as conn:
             if mode == "replace":
-                conn.execute(
-                    f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df"
-                )
+                conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df")
             elif mode == "append":
                 # Try to insert; create table if it doesn't exist
                 try:
                     conn.execute(f"INSERT INTO {table_name} SELECT * FROM df")
                 except duckdb.CatalogException:
-                    conn.execute(
-                        f"CREATE TABLE {table_name} AS SELECT * FROM df"
-                    )
+                    conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")
             else:
                 raise ValueError(f"Unknown mode: {mode}. Use 'replace' or 'append'.")
 
@@ -191,8 +185,7 @@ class DuckDBConnector:
         """Check if a table exists in the database."""
         with self.connection() as conn:
             result = conn.execute(
-                "SELECT COUNT(*) FROM information_schema.tables "
-                "WHERE table_name = ?",
+                "SELECT COUNT(*) FROM information_schema.tables " "WHERE table_name = ?",
                 [table_name],
             ).fetchone()
             return result[0] > 0
@@ -200,17 +193,14 @@ class DuckDBConnector:
     def get_table_row_count(self, table_name: str) -> int:
         """Get the row count of a table."""
         with self.connection() as conn:
-            result = conn.execute(
-                f"SELECT COUNT(*) FROM {table_name}"
-            ).fetchone()
+            result = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
             return result[0]
 
     def get_tables(self) -> list[str]:
         """List all tables in the database."""
         with self.connection() as conn:
             result = conn.execute(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = 'main'"
+                "SELECT table_name FROM information_schema.tables " "WHERE table_schema = 'main'"
             ).fetchdf()
             return result["table_name"].tolist()
 
@@ -227,9 +217,7 @@ class DuckDBConnector:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with self.connection() as conn:
-            conn.execute(
-                f"COPY {table_name} TO '{output_path}' (FORMAT PARQUET)"
-            )
+            conn.execute(f"COPY {table_name} TO '{output_path}' (FORMAT PARQUET)")
         logger.info(f"Exported {table_name} to {output_path}")
         return output_path
 

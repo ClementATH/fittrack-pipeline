@@ -14,7 +14,6 @@ gets stale or pipelines start erroring.
 # health checks serve the same purpose for the data pipeline.
 """
 
-import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -87,8 +86,8 @@ class HealthChecker:
         """Check available disk space."""
         try:
             usage = shutil.disk_usage(str(self.data_dir.resolve()))
-            free_gb = usage.free / (1024 ** 3)
-            total_gb = usage.total / (1024 ** 3)
+            free_gb = usage.free / (1024**3)
+            total_gb = usage.total / (1024**3)
             used_pct = (usage.used / usage.total) * 100
 
             healthy = free_gb > 1.0  # At least 1 GB free
@@ -109,6 +108,7 @@ class HealthChecker:
         """Check if DuckDB database is accessible."""
         try:
             import duckdb
+
             conn = duckdb.connect(str(self.db_path), read_only=True)
             tables = conn.execute(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
@@ -155,8 +155,9 @@ class HealthChecker:
         """Check system memory usage (basic check)."""
         try:
             import psutil
+
             mem = psutil.virtual_memory()
-            available_gb = mem.available / (1024 ** 3)
+            available_gb = mem.available / (1024**3)
             used_pct = mem.percent
             return HealthStatus(
                 name="memory",

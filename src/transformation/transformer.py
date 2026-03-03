@@ -126,8 +126,7 @@ class DataTransformer:
         method = transform_methods.get(transform_key)
         if method is None:
             logger.warning(
-                f"No specific transformer for {transform_key}, "
-                f"passing through with minimal transforms",
+                f"No specific transformer for {transform_key}, " f"passing through with minimal transforms",
                 extra={"source": source, "layer": "silver"},
             )
             return df
@@ -140,8 +139,7 @@ class DataTransformer:
         result = method(df)
 
         logger.info(
-            f"Transformation complete for {source}/{dataset}: "
-            f"{len(result)} rows, {len(result.columns)} columns",
+            f"Transformation complete for {source}/{dataset}: " f"{len(result)} rows, {len(result.columns)} columns",
             extra={"source": source, "layer": "silver"},
         )
         return result
@@ -193,9 +191,7 @@ class DataTransformer:
         # Map muscle IDs to names
         if "muscles" in df.columns:
             df["primary_muscle"] = df["muscles"].apply(
-                lambda x: WGER_MUSCLE_MAP.get(x[0], "full_body")
-                if isinstance(x, list) and len(x) > 0
-                else "full_body"
+                lambda x: WGER_MUSCLE_MAP.get(x[0], "full_body") if isinstance(x, list) and len(x) > 0 else "full_body"
             )
             df["secondary_muscles"] = df["muscles"].apply(
                 lambda x: [WGER_MUSCLE_MAP.get(m, "unknown") for m in x[1:]]
@@ -206,9 +202,7 @@ class DataTransformer:
         # Map equipment IDs to names
         if "equipment" in df.columns:
             df["equipment_name"] = df["equipment"].apply(
-                lambda x: WGER_EQUIPMENT_MAP.get(x[0], "none")
-                if isinstance(x, list) and len(x) > 0
-                else "none"
+                lambda x: WGER_EQUIPMENT_MAP.get(x[0], "none") if isinstance(x, list) and len(x) > 0 else "none"
             )
 
         # Generate slug from name
@@ -225,18 +219,16 @@ class DataTransformer:
         category_map: dict[int, str] = {
             8: "compound",  # Arms
             9: "compound",  # Legs
-            10: "compound", # Abs
-            11: "compound", # Chest
-            12: "compound", # Back
-            13: "compound", # Shoulders
-            14: "cardio",   # Calves -> treat as isolation but keep generic
-            15: "compound", # Glutes
+            10: "compound",  # Abs
+            11: "compound",  # Chest
+            12: "compound",  # Back
+            13: "compound",  # Shoulders
+            14: "cardio",  # Calves -> treat as isolation but keep generic
+            15: "compound",  # Glutes
         }
         if "category" in df.columns:
             df["exercise_type"] = df["category"].apply(
-                lambda x: category_map.get(
-                    x if isinstance(x, int) else 0, "compound"
-                )
+                lambda x: category_map.get(x if isinstance(x, int) else 0, "compound")
             )
 
         # Set defaults
@@ -263,9 +255,7 @@ class DataTransformer:
         df = df.rename(columns=available_cols)
 
         # Keep only mapped columns plus metadata
-        keep_cols = list(available_cols.values()) + [
-            col for col in df.columns if col.startswith("_")
-        ]
+        keep_cols = list(available_cols.values()) + [col for col in df.columns if col.startswith("_")]
         df = df[[col for col in keep_cols if col in df.columns]]
 
         return df
@@ -305,13 +295,13 @@ class DataTransformer:
 
         # Extract key nutrients from nested structure if present
         nutrient_map = {
-            1003: "protein_g",   # Protein
-            1004: "fats_g",      # Total fat
-            1005: "carbs_g",     # Carbohydrates
-            1008: "calories",    # Energy (kcal)
-            1079: "fiber_g",     # Fiber
-            2000: "sugar_g",     # Sugars
-            1093: "sodium_mg",   # Sodium
+            1003: "protein_g",  # Protein
+            1004: "fats_g",  # Total fat
+            1005: "carbs_g",  # Carbohydrates
+            1008: "calories",  # Energy (kcal)
+            1079: "fiber_g",  # Fiber
+            2000: "sugar_g",  # Sugars
+            1093: "sodium_mg",  # Sodium
         }
 
         if "food_nutrients" in df.columns:
@@ -320,16 +310,12 @@ class DataTransformer:
                 if isinstance(nutrients, list):
                     for nutrient in nutrients:
                         if isinstance(nutrient, dict):
-                            nid = nutrient.get("nutrientId") or nutrient.get(
-                                "nutrient", {}
-                            ).get("id")
+                            nid = nutrient.get("nutrientId") or nutrient.get("nutrient", {}).get("id")
                             if nid in nutrient_map:
                                 col_name = nutrient_map[nid]
                                 if col_name not in df.columns:
                                     df[col_name] = None
-                                df.at[row.name, col_name] = nutrient.get(
-                                    "value", nutrient.get("amount")
-                                )
+                                df.at[row.name, col_name] = nutrient.get("value", nutrient.get("amount"))
 
         # Rename description to food_name
         if "description" in df.columns:
@@ -357,6 +343,8 @@ class DataTransformer:
             mask = df[unit_col].str.lower().isin(["lbs", "lb", "pounds"])
             weight_col = "weight" if "weight" in df.columns else "weight_kg"
             if weight_col in df.columns:
+                # Cast to float first — pandas 3.x won't silently upcast int64 to float
+                df[weight_col] = df[weight_col].astype(float)
                 df.loc[mask, weight_col] = df.loc[mask, weight_col] * 0.453592
                 # Standardize unit
                 df[unit_col] = "kg"

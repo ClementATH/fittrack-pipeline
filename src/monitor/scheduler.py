@@ -29,8 +29,8 @@ import signal
 import sys
 from typing import Any
 
-from src.utils.logger import get_logger
 from src.utils.config_loader import load_pipeline_config
+from src.utils.logger import get_logger
 
 logger = get_logger("fittrack.monitor.scheduler")
 
@@ -120,10 +120,7 @@ class PipelineScheduler:
     def start(self) -> None:
         """Start the scheduler (blocking)."""
         if not self.config.scheduling.enabled:
-            logger.warning(
-                "Scheduling is disabled in config. "
-                "Set scheduling.enabled: true to activate."
-            )
+            logger.warning("Scheduling is disabled in config. " "Set scheduling.enabled: true to activate.")
             return
 
         self._scheduler = self._setup_scheduler()
@@ -155,6 +152,7 @@ class PipelineScheduler:
         logger.info("Scheduler triggered: Full Pipeline Run")
         try:
             from src.orchestrator import PipelineOrchestrator
+
             orchestrator = PipelineOrchestrator()
             orchestrator.run_full_pipeline()
         except Exception as e:
@@ -166,6 +164,7 @@ class PipelineScheduler:
         logger.info("Scheduler triggered: Quality Checks")
         try:
             from src.orchestrator import PipelineOrchestrator
+
             orchestrator = PipelineOrchestrator()
             orchestrator.run_quality_only()
         except Exception as e:
@@ -176,8 +175,8 @@ class PipelineScheduler:
         """Execute health checks (called by scheduler)."""
         logger.info("Scheduler triggered: Health Checks")
         try:
-            from src.monitor.health_check import HealthChecker
             from src.monitor.alerter import Alerter
+            from src.monitor.health_check import HealthChecker
 
             checker = HealthChecker()
             results = checker.run_all_checks()
@@ -187,7 +186,8 @@ class PipelineScheduler:
                 alerter = Alerter()
                 for r in unhealthy:
                     alerter.alert(
-                        "WARNING", "health_check",
+                        "WARNING",
+                        "health_check",
                         f"{r.name}: {r.message}",
                     )
         except Exception as e:

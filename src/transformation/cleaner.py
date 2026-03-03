@@ -30,7 +30,6 @@ What Would Break If you skipped cleaning:
 """
 
 import re
-from typing import Any
 
 import pandas as pd
 
@@ -120,13 +119,10 @@ class DataCleaner:
         df.columns = unique_cols
 
         # Log renamed columns
-        renamed = {
-            old: new for old, new in zip(original_cols, unique_cols) if old != new
-        }
+        renamed = {old: new for old, new in zip(original_cols, unique_cols, strict=False) if old != new}
         if renamed:
             logger.debug(
-                f"Renamed {len(renamed)} columns: "
-                f"{list(renamed.items())[:5]}{'...' if len(renamed) > 5 else ''}"
+                f"Renamed {len(renamed)} columns: " f"{list(renamed.items())[:5]}{'...' if len(renamed) > 5 else ''}"
             )
 
         return df
@@ -296,8 +292,7 @@ class DataCleaner:
         df = self.deduplicate(df, subset=dedup_columns)
 
         logger.info(
-            f"Cleaning complete for {table_name}: "
-            f"{len(df)} rows remaining",
+            f"Cleaning complete for {table_name}: " f"{len(df)} rows remaining",
             extra={"layer": "silver"},
         )
         return df

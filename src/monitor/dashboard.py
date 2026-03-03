@@ -23,11 +23,11 @@ Run with:
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 # ---------------------------------------------------------------------------
 # Resolve project root so imports work when Streamlit runs from any directory
@@ -36,9 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.monitor.health_check import HealthChecker
-from src.monitor.alerter import Alerter
-
+from src.monitor.health_check import HealthChecker  # noqa: E402
 
 # ============================================================
 # Page config
@@ -55,22 +53,30 @@ st.set_page_config(
 # Helper functions
 # ============================================================
 
+
 def load_pipeline_runs() -> pd.DataFrame:
     """Load pipeline run history from the DuckDB database."""
     db_path = PROJECT_ROOT / "data" / "fittrack.duckdb"
     if not db_path.exists():
-        return pd.DataFrame(columns=[
-            "run_id", "pipeline_name", "source_name", "layer",
-            "status", "started_at", "completed_at",
-            "rows_processed", "rows_failed",
-        ])
+        return pd.DataFrame(
+            columns=[
+                "run_id",
+                "pipeline_name",
+                "source_name",
+                "layer",
+                "status",
+                "started_at",
+                "completed_at",
+                "rows_processed",
+                "rows_failed",
+            ]
+        )
     try:
         import duckdb
+
         conn = duckdb.connect(str(db_path), read_only=True)
         try:
-            df = conn.execute(
-                "SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT 100"
-            ).fetchdf()
+            df = conn.execute("SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT 100").fetchdf()
         except duckdb.CatalogException:
             df = pd.DataFrame()
         conn.close()
@@ -86,11 +92,10 @@ def load_quality_scores() -> pd.DataFrame:
         return pd.DataFrame()
     try:
         import duckdb
+
         conn = duckdb.connect(str(db_path), read_only=True)
         try:
-            df = conn.execute(
-                "SELECT * FROM quality_scores ORDER BY scored_at DESC LIMIT 200"
-            ).fetchdf()
+            df = conn.execute("SELECT * FROM quality_scores ORDER BY scored_at DESC LIMIT 200").fetchdf()
         except duckdb.CatalogException:
             df = pd.DataFrame()
         conn.close()
@@ -161,7 +166,9 @@ if page == "Overview":
         total_runs = len(runs_df) if not runs_df.empty else 0
         st.metric("Total Pipeline Runs", total_runs)
     with col2:
-        success_runs = len(runs_df[runs_df["status"] == "success"]) if not runs_df.empty and "status" in runs_df.columns else 0
+        success_runs = (
+            len(runs_df[runs_df["status"] == "success"]) if not runs_df.empty and "status" in runs_df.columns else 0
+        )
         st.metric("Successful Runs", success_runs)
     with col3:
         st.metric("Active Alerts", len(alerts))
@@ -187,8 +194,8 @@ if page == "Overview":
     st.subheader("Recent Pipeline Runs")
     if not runs_df.empty:
         display_cols = [
-            c for c in ["pipeline_name", "source_name", "layer", "status",
-                         "started_at", "rows_processed"]
+            c
+            for c in ["pipeline_name", "source_name", "layer", "status", "started_at", "rows_processed"]
             if c in runs_df.columns
         ]
         st.dataframe(runs_df[display_cols].head(10), use_container_width=True)
@@ -276,16 +283,25 @@ elif page == "Data Quality":
                     st.progress(min(score / 100, 1.0), text=f"{table}: {score:.1f}/100")
                 with col2:
                     grade = (
-                        "A+" if score >= 95 else "A" if score >= 90 else
-                        "B+" if score >= 85 else "B" if score >= 80 else
-                        "C" if score >= 70 else "D" if score >= 60 else "F"
+                        "A+"
+                        if score >= 95
+                        else "A"
+                        if score >= 90
+                        else "B+"
+                        if score >= 85
+                        else "B"
+                        if score >= 80
+                        else "C"
+                        if score >= 70
+                        else "D"
+                        if score >= 60
+                        else "F"
                     )
                     st.markdown(f"**Grade: {grade}**")
 
         # Quality dimensions breakdown
         st.subheader("Quality Dimensions")
-        dim_cols = ["table_name", "completeness_score", "accuracy_score",
-                     "consistency_score", "timeliness_score"]
+        dim_cols = ["table_name", "completeness_score", "accuracy_score", "consistency_score", "timeliness_score"]
         available = [c for c in dim_cols if c in scores_df.columns]
         if len(available) > 1:
             st.dataframe(
@@ -382,10 +398,7 @@ elif page == "Alerts":
             severity = alert.get("severity", "INFO")
             icon = {"CRITICAL": "🔴", "WARNING": "🟡", "INFO": "🔵"}.get(severity, "⚪")
 
-            with st.expander(
-                f"{icon} [{severity}] {alert.get('source', '?')}: "
-                f"{alert.get('message', '')[:80]}"
-            ):
+            with st.expander(f"{icon} [{severity}] {alert.get('source', '?')}: " f"{alert.get('message', '')[:80]}"):
                 st.markdown(f"**Time:** {alert.get('timestamp', 'N/A')}")
                 st.markdown(f"**Source:** {alert.get('source', 'N/A')}")
                 st.markdown(f"**Message:** {alert.get('message', 'N/A')}")

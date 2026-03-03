@@ -98,11 +98,8 @@ class FileIngestor(BaseIngestor):
         if pattern:
             # Expand pattern like "workout_*.{csv,json}" into actual globs
             for ext in self.supported_formats:
-                glob_pattern = pattern.replace("{csv,json}", ext.lstrip("."))
                 # Also try with the dot prefix
-                for match in self.watch_dir.glob(
-                    pattern.split(".")[0].replace("*", "**/*") + ext
-                ):
+                for match in self.watch_dir.glob(pattern.split(".")[0].replace("*", "**/*") + ext):
                     if match.is_file():
                         files.append(match)
                 # Direct glob
@@ -121,8 +118,7 @@ class FileIngestor(BaseIngestor):
         for f in files:
             if f.stat().st_size > self.MAX_FILE_SIZE:
                 logger.warning(
-                    f"File too large ({f.stat().st_size / 1024 / 1024:.1f} MB), "
-                    f"skipping: {f.name}",
+                    f"File too large ({f.stat().st_size / 1024 / 1024:.1f} MB), " f"skipping: {f.name}",
                     extra={"source": self.source_name},
                 )
             else:
@@ -155,8 +151,7 @@ class FileIngestor(BaseIngestor):
                     df = pd.read_csv(file_path, encoding="utf-8")
                 except UnicodeDecodeError:
                     logger.warning(
-                        f"UTF-8 decode failed for {file_path.name}, "
-                        f"trying Latin-1",
+                        f"UTF-8 decode failed for {file_path.name}, " f"trying Latin-1",
                         extra={"source": self.source_name},
                     )
                     df = pd.read_csv(file_path, encoding="latin-1")
@@ -187,8 +182,7 @@ class FileIngestor(BaseIngestor):
                 )
 
             logger.info(
-                f"Read {len(df)} rows from {file_path.name} "
-                f"({len(df.columns)} columns)",
+                f"Read {len(df)} rows from {file_path.name} " f"({len(df.columns)} columns)",
                 extra={"source": self.source_name},
             )
             return df
