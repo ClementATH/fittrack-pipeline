@@ -168,6 +168,83 @@ def inject_custom_css() -> None:
         border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
+    /* ── Athlete profile card ── */
+    .athlete-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .athlete-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(108, 99, 255, 0.15);
+    }
+    .athlete-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #FAFAFA;
+        margin-bottom: 0.25rem;
+    }
+    .athlete-email {
+        color: rgba(250, 250, 250, 0.4);
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    .stat-item .stat-label {
+        color: rgba(250, 250, 250, 0.45);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .stat-item .stat-value {
+        color: #FAFAFA;
+        font-size: 1.15rem;
+        font-weight: 600;
+    }
+    .training-badge {
+        display: inline-block;
+        background: rgba(108, 99, 255, 0.15);
+        color: #6C63FF;
+        border-radius: 20px;
+        padding: 0.2rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    /* ── Staggered animations ── */
+    .main .block-container > div:nth-child(1) { animation-delay: 0s; }
+    .main .block-container > div:nth-child(2) { animation-delay: 0.05s; }
+    .main .block-container > div:nth-child(3) { animation-delay: 0.1s; }
+    .main .block-container > div:nth-child(4) { animation-delay: 0.15s; }
+    .main .block-container > div:nth-child(5) { animation-delay: 0.2s; }
+
+    /* ── Filter card ── */
+    .filter-bar {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── PR badge ── */
+    .pr-badge {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #000;
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
     /* ── Hide Streamlit defaults ── */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
@@ -570,8 +647,8 @@ def create_quality_trend_line(scores_df: pd.DataFrame) -> go.Figure:
         title=dict(text="Overall Quality Score Over Time", font=dict(size=16)),
         xaxis_title="",
         yaxis_title="Score",
-        yaxis=dict(range=[0, 105], gridcolor="rgba(255,255,255,0.05)"),
     )
+    fig.update_yaxes(range=[0, 105])
     return fig
 
 
@@ -605,8 +682,8 @@ def create_dimension_trend_lines(scores_df: pd.DataFrame, table_name: str) -> go
             text=f"Dimension Trends: {table_name.replace('_', ' ').title()}",
             font=dict(size=15),
         ),
-        yaxis=dict(range=[0, 105], gridcolor="rgba(255,255,255,0.05)"),
     )
+    fig.update_yaxes(range=[0, 105])
     return fig
 
 
@@ -644,6 +721,365 @@ def create_quality_gate_bar(scores_df: pd.DataFrame) -> go.Figure:
         title=dict(text="Quality Gate Pass/Fail Rate", font=dict(size=16)),
         showlegend=True,
     )
+    return fig
+
+
+# ============================================================
+# Analytics chart factories (Gold-layer data)
+# ============================================================
+def create_e1rm_chart(workouts_df: pd.DataFrame, exercise_name: str) -> go.Figure:
+    """Estimated 1RM trend using Epley formula: weight * (1 + reps / 30)."""
+    df = workouts_df[workouts_df["exercise"] == exercise_name].copy()
+    if df.empty:
+        fig = go.Figure()
+        fig.add_annotation(
+            text="No data for this exercise", showarrow=False, font=dict(size=14, color="rgba(250,250,250,0.3)")
+        )
+        fig.update_layout(**get_plotly_defaults(), height=350)
+        return fig
+
+    df["w"] = pd.to_numeric(df["weight"], errors="coerce")
+    df["r"] = pd.to_numeric(df["reps"], errors="coerce")
+    df["e1rm"] = (df["w"] * (1 + df["r"] / 30)).round(1)
+    date_col = "workout_date" if "workout_date" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    daily = df.groupby("dt")["e1rm"].max().reset_index().sort_values("dt")
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=daily["dt"],
+            y=daily["e1rm"],
+            mode="lines+markers",
+            name="Est. 1RM",
+            line=dict(color="#6C63FF", width=3),
+            marker=dict(size=8, color="#6C63FF", line=dict(width=1, color="rgba(255,255,255,0.2)")),
+            fill="tozeroy",
+            fillcolor="rgba(108,99,255,0.08)",
+            hovertemplate="<b>%{x|%b %d}</b><br>Est. 1RM: %{y:.1f} kg<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        title=dict(text=f"Estimated 1RM — {exercise_name}", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="kg",
+    )
+    return fig
+
+
+def create_weekly_volume_chart(workouts_df: pd.DataFrame) -> go.Figure:
+    """Weekly training volume bar chart."""
+    df = workouts_df.copy()
+    df["w"] = pd.to_numeric(df.get("weight", 0), errors="coerce").fillna(0)
+    df["r"] = pd.to_numeric(df.get("reps", 0), errors="coerce").fillna(0)
+    df["vol"] = df["w"] * df["r"]
+    date_col = "workout_date" if "workout_date" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    df["week"] = df["dt"].dt.isocalendar().week.astype(int)
+    weekly = df.groupby("week")["vol"].sum().reset_index().sort_values("week")
+    weekly["label"] = "W" + weekly["week"].astype(str)
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=weekly["label"],
+            y=weekly["vol"].round(0),
+            marker=dict(color="#00D68F", cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>Volume: %{y:,.0f} kg<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=320,
+        title=dict(text="Weekly Training Volume", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Volume (kg)",
+    )
+    return fig
+
+
+def create_muscle_volume_chart(workouts_df: pd.DataFrame, exercises_df: pd.DataFrame) -> go.Figure:
+    """Horizontal bar — training volume by primary muscle group."""
+    df = workouts_df.copy()
+    df["w"] = pd.to_numeric(df.get("weight", 0), errors="coerce").fillna(0)
+    df["r"] = pd.to_numeric(df.get("reps", 0), errors="coerce").fillna(0)
+    df["vol"] = df["w"] * df["r"]
+
+    muscle_map: dict[str, str] = {}
+    if not exercises_df.empty and "name" in exercises_df.columns and "primary_muscle" in exercises_df.columns:
+        muscle_map = dict(zip(exercises_df["name"], exercises_df["primary_muscle"], strict=False))
+    df["muscle"] = df["exercise"].map(muscle_map).fillna("other")
+    mv = df.groupby("muscle")["vol"].sum().sort_values(ascending=True)
+
+    palette = {
+        "chest": "#FF3D71",
+        "back": "#0095FF",
+        "shoulders": "#FFAA00",
+        "quads": "#00D68F",
+        "glutes": "#6C63FF",
+        "hamstrings": "#FF6B6B",
+        "biceps": "#4ECDC4",
+        "triceps": "#45B7D1",
+        "lats": "#96CEB4",
+        "calves": "#FFEAA7",
+        "abs": "#DDA0DD",
+        "traps": "#98D8C8",
+    }
+    bar_colors = [palette.get(m, "#6C63FF") for m in mv.index]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            y=[m.replace("_", " ").title() for m in mv.index],
+            x=mv.values.round(0),
+            orientation="h",
+            marker=dict(color=bar_colors, cornerradius=6),
+            hovertemplate="<b>%{y}</b><br>Volume: %{x:,.0f} kg<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=400,
+        title=dict(text="Volume by Muscle Group", font=dict(size=15)),
+        xaxis_title="Total Volume (kg)",
+        yaxis_title="",
+    )
+    return fig
+
+
+def create_calorie_trend(nutrition_df: pd.DataFrame) -> go.Figure:
+    """Daily calorie trend with 7-day moving average."""
+    df = nutrition_df.copy()
+    df["cal"] = pd.to_numeric(df.get("calories", 0), errors="coerce").fillna(0)
+    df["dt"] = pd.to_datetime(df.get("log_date", ""), errors="coerce")
+    daily = df.groupby("dt")["cal"].sum().reset_index().sort_values("dt")
+    daily["ma7"] = daily["cal"].rolling(7, min_periods=1).mean()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=daily["dt"],
+            y=daily["cal"].round(0),
+            name="Daily",
+            marker=dict(color="rgba(108,99,255,0.3)", cornerradius=4),
+            hovertemplate="<b>%{x|%b %d}</b><br>%{y:,.0f} cal<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=daily["dt"],
+            y=daily["ma7"].round(0),
+            name="7-Day Avg",
+            mode="lines",
+            line=dict(color="#FFAA00", width=3),
+            hovertemplate="<b>%{x|%b %d}</b><br>Avg: %{y:,.0f} cal<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        barmode="overlay",
+        title=dict(text="Daily Calorie Intake", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Calories",
+    )
+    return fig
+
+
+def create_macro_donut(nutrition_df: pd.DataFrame) -> go.Figure:
+    """Macro split donut chart."""
+    p = (
+        float(pd.to_numeric(nutrition_df["protein_g"], errors="coerce").sum())
+        if "protein_g" in nutrition_df.columns
+        else 0.0
+    )
+    c = (
+        float(pd.to_numeric(nutrition_df["carbs_g"], errors="coerce").sum())
+        if "carbs_g" in nutrition_df.columns
+        else 0.0
+    )
+    f = float(pd.to_numeric(nutrition_df["fats_g"], errors="coerce").sum()) if "fats_g" in nutrition_df.columns else 0.0
+    fig = go.Figure(
+        go.Pie(
+            labels=["Protein", "Carbs", "Fats"],
+            values=[p, c, f],
+            hole=0.6,
+            marker=dict(colors=["#00D68F", "#0095FF", "#FFAA00"]),
+            textinfo="percent+label",
+            textfont=dict(size=12, color="#FAFAFA"),
+            hovertemplate="<b>%{label}</b><br>%{value:,.0f}g (%{percent})<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif", color="#FAFAFA"),
+        height=300,
+        margin=dict(l=20, r=20, t=40, b=20),
+        showlegend=False,
+        title=dict(text="Macro Split", font=dict(size=15)),
+    )
+    return fig
+
+
+def create_meal_distribution(nutrition_df: pd.DataFrame) -> go.Figure:
+    """Average calories by meal type."""
+    df = nutrition_df.copy()
+    df["cal"] = pd.to_numeric(df.get("calories", 0), errors="coerce").fillna(0)
+    if "meal_type" not in df.columns:
+        fig = go.Figure()
+        fig.update_layout(**get_plotly_defaults(), height=300)
+        return fig
+    avg = df.groupby("meal_type")["cal"].mean().sort_values(ascending=False)
+    mc = {
+        "breakfast": "#FFAA00",
+        "lunch": "#0095FF",
+        "dinner": "#6C63FF",
+        "snack": "#00D68F",
+        "pre_workout": "#FF6B6B",
+        "post_workout": "#4ECDC4",
+        "supplement": "#96CEB4",
+    }
+    fig = go.Figure(
+        go.Bar(
+            x=[m.replace("_", " ").title() for m in avg.index],
+            y=avg.values.round(0),
+            marker=dict(color=[mc.get(m, "#6C63FF") for m in avg.index], cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>Avg: %{y:,.0f} cal<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=320,
+        title=dict(text="Avg Calories by Meal Type", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Calories",
+    )
+    return fig
+
+
+def create_weight_trend(metrics_df: pd.DataFrame) -> go.Figure:
+    """Weight trend with 7-day moving average."""
+    df = metrics_df.copy()
+    df["w"] = pd.to_numeric(df.get("weight_kg", 0), errors="coerce")
+    date_col = "measured_at" if "measured_at" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.sort_values("dt")
+    df["ma7"] = df["w"].rolling(7, min_periods=1).mean()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df["dt"],
+            y=df["w"],
+            mode="markers",
+            name="Daily",
+            marker=dict(size=6, color="rgba(108,99,255,0.5)"),
+            hovertemplate="<b>%{x|%b %d}</b><br>%{y:.1f} kg<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["dt"],
+            y=df["ma7"].round(1),
+            mode="lines",
+            name="7-Day Avg",
+            line=dict(color="#6C63FF", width=3),
+            hovertemplate="<b>%{x|%b %d}</b><br>Avg: %{y:.1f} kg<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        title=dict(text="Weight Trend", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="kg",
+    )
+    return fig
+
+
+def create_body_comp_chart(metrics_df: pd.DataFrame) -> go.Figure:
+    """Lean mass vs fat mass over time."""
+    df = metrics_df.copy()
+    date_col = "measured_at" if "measured_at" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.sort_values("dt")
+    fig = go.Figure()
+    if "lean_mass_calc_kg" in df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df["dt"],
+                y=pd.to_numeric(df["lean_mass_calc_kg"], errors="coerce"),
+                mode="lines+markers",
+                name="Lean Mass",
+                line=dict(color="#00D68F", width=2),
+                marker=dict(size=5),
+                hovertemplate="<b>%{x|%b %d}</b><br>Lean: %{y:.1f} kg<extra></extra>",
+            )
+        )
+    if "fat_mass_kg" in df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df["dt"],
+                y=pd.to_numeric(df["fat_mass_kg"], errors="coerce"),
+                mode="lines+markers",
+                name="Fat Mass",
+                line=dict(color="#FF3D71", width=2),
+                marker=dict(size=5),
+                hovertemplate="<b>%{x|%b %d}</b><br>Fat: %{y:.1f} kg<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        title=dict(text="Body Composition", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="kg",
+    )
+    return fig
+
+
+def create_recovery_chart(metrics_df: pd.DataFrame) -> go.Figure:
+    """Recovery score and sleep quality trends."""
+    df = metrics_df.copy()
+    date_col = "measured_at" if "measured_at" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.sort_values("dt")
+    fig = go.Figure()
+    if "recovery_score" in df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df["dt"],
+                y=pd.to_numeric(df["recovery_score"], errors="coerce"),
+                mode="lines",
+                name="Recovery",
+                line=dict(color="#00D68F", width=2),
+                hovertemplate="<b>%{x|%b %d}</b><br>Recovery: %{y}<extra></extra>",
+            )
+        )
+    if "sleep_quality" in df.columns:
+        sleep = pd.to_numeric(df["sleep_quality"], errors="coerce")
+        fig.add_trace(
+            go.Scatter(
+                x=df["dt"],
+                y=sleep * 10,
+                mode="lines",
+                name="Sleep (x10)",
+                line=dict(color="#0095FF", width=2, dash="dot"),
+                customdata=sleep,
+                hovertemplate="<b>%{x|%b %d}</b><br>Sleep: %{customdata}/10<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=320,
+        title=dict(text="Recovery & Sleep Trends", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Score",
+    )
+    fig.update_yaxes(range=[0, 105])
     return fig
 
 
@@ -741,6 +1177,25 @@ def get_grade(score: float) -> str:
     return "F"
 
 
+def load_gold_table(table_name: str) -> pd.DataFrame:
+    """Load a Gold-layer table from DuckDB."""
+    db_path = PROJECT_ROOT / "data" / "fittrack.duckdb"
+    if not db_path.exists():
+        return pd.DataFrame()
+    try:
+        import duckdb
+
+        conn = duckdb.connect(str(db_path), read_only=True)
+        try:
+            df = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
+        except duckdb.CatalogException:
+            df = pd.DataFrame()
+        conn.close()
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
 # ============================================================
 # Sidebar
 # ============================================================
@@ -767,14 +1222,25 @@ with st.sidebar:
 
     page = st.radio(
         "Navigate",
-        ["Overview", "Pipeline Runs", "Data Quality", "Quality Trends", "Health Checks", "Alerts"],
+        [
+            "Overview",
+            "Athlete Profiles",
+            "Strength Analytics",
+            "Nutrition Analytics",
+            "Body Composition",
+            "Pipeline Runs",
+            "Data Quality",
+            "Quality Trends",
+            "Health Checks",
+            "Alerts",
+        ],
         index=0,
         label_visibility="collapsed",
     )
 
     st.divider()
 
-    st.caption(f"v1.0.0 · {datetime.now().strftime('%H:%M:%S')}")
+    st.caption(f"v2.0.0 · {datetime.now().strftime('%H:%M:%S')}")
     if st.button("↻ Refresh Data", use_container_width=True):
         st.rerun()
 
@@ -865,6 +1331,308 @@ if page == "Overview":
         """,
             unsafe_allow_html=True,
         )
+
+
+# ============================================================
+# PAGE: Athlete Profiles
+# ============================================================
+elif page == "Athlete Profiles":
+    st.markdown('<div class="page-title">Athlete Profiles</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Individual athlete summaries and key performance indicators</div>',
+        unsafe_allow_html=True,
+    )
+
+    metrics_df = load_gold_table("gold_body_metrics")
+    workouts_df = load_gold_table("gold_workouts")
+    nutrition_df = load_gold_table("gold_nutrition_logs")
+    athletes_df = load_gold_table("dim_athletes")
+
+    if metrics_df.empty and workouts_df.empty:
+        render_empty_state("👥", "No athlete data yet. Run the pipeline to populate profiles.")
+    else:
+        athlete_ids: set[str] = set()
+        for check_df in [metrics_df, workouts_df, nutrition_df]:
+            if "athlete_id" in check_df.columns:
+                athlete_ids.update(check_df["athlete_id"].unique())
+
+        name_map: dict[str, str] = {}
+        style_map: dict[str, str] = {}
+        if not athletes_df.empty and "email" in athletes_df.columns:
+            name_map = dict(zip(athletes_df["email"], athletes_df.get("full_name", athletes_df["email"]), strict=False))
+            if "activity_level" in athletes_df.columns:
+                style_map = dict(zip(athletes_df["email"], athletes_df["activity_level"], strict=False))
+
+        athletes_sorted = sorted(athlete_ids)
+        accent_colors = ["#6C63FF", "#00D68F", "#FFAA00", "#0095FF", "#FF3D71", "#4ECDC4"]
+
+        for idx in range(0, len(athletes_sorted), 3):
+            cols = st.columns(3)
+            for j, col in enumerate(cols):
+                if idx + j >= len(athletes_sorted):
+                    break
+                aid = athletes_sorted[idx + j]
+                name = name_map.get(aid, aid.split("@")[0].replace(".", " ").title())
+                style = style_map.get(aid, "athlete").replace("_", " ").title()
+                accent = accent_colors[(idx + j) % len(accent_colors)]
+
+                a_m = (
+                    metrics_df[metrics_df["athlete_id"] == aid]
+                    if not metrics_df.empty and "athlete_id" in metrics_df.columns
+                    else pd.DataFrame()
+                )
+                a_w = (
+                    workouts_df[workouts_df["athlete_id"] == aid]
+                    if not workouts_df.empty and "athlete_id" in workouts_df.columns
+                    else pd.DataFrame()
+                )
+                a_n = (
+                    nutrition_df[nutrition_df["athlete_id"] == aid]
+                    if not nutrition_df.empty and "athlete_id" in nutrition_df.columns
+                    else pd.DataFrame()
+                )
+
+                avg_wt = (
+                    pd.to_numeric(a_m.get("weight_kg", pd.Series(dtype=float)), errors="coerce").mean()
+                    if not a_m.empty
+                    else 0
+                )
+                avg_bf = (
+                    pd.to_numeric(a_m.get("body_fat_pct", pd.Series(dtype=float)), errors="coerce").mean()
+                    if not a_m.empty
+                    else 0
+                )
+                t_days = a_w["workout_date"].nunique() if not a_w.empty and "workout_date" in a_w.columns else 0
+                total_sets = len(a_w)
+                daily_cal = (
+                    pd.to_numeric(a_n["calories"], errors="coerce").groupby(a_n["log_date"]).sum().mean()
+                    if not a_n.empty and "log_date" in a_n.columns
+                    else 0
+                )
+
+                with col:
+                    st.markdown(
+                        f"""
+                    <div class="athlete-card" style="border-left: 4px solid {accent};">
+                        <div class="athlete-name">{name}</div>
+                        <div class="athlete-email">{aid}</div>
+                        <div class="training-badge">{style}</div>
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Avg Weight</div>
+                                <div class="stat-value">{avg_wt:.1f} kg</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Body Fat</div>
+                                <div class="stat-value">{avg_bf:.1f}%</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Training Days</div>
+                                <div class="stat-value">{t_days}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Daily Calories</div>
+                                <div class="stat-value">{daily_cal:,.0f}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem; color: rgba(250,250,250,0.35); font-size: 0.8rem;">
+                            {total_sets} total sets logged
+                        </div>
+                    </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+
+
+# ============================================================
+# PAGE: Strength Analytics
+# ============================================================
+elif page == "Strength Analytics":
+    st.markdown('<div class="page-title">Strength Analytics</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Progressive overload tracking and training volume analysis</div>',
+        unsafe_allow_html=True,
+    )
+
+    workouts_df = load_gold_table("gold_workouts")
+    exercises_df = load_gold_table("gold_exercises")
+
+    if workouts_df.empty:
+        render_empty_state("💪", "No workout data yet. Run the pipeline to see strength analytics.")
+    else:
+        # Filters
+        st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
+        f1, f2 = st.columns(2)
+        with f1:
+            athletes_in_data = sorted(workouts_df["athlete_id"].unique()) if "athlete_id" in workouts_df.columns else []
+            athlete_filter = st.selectbox("Athlete", ["All Athletes", *athletes_in_data], key="str_ath")
+        with f2:
+            exercises_in_data = sorted(workouts_df["exercise"].unique()) if "exercise" in workouts_df.columns else []
+            exercise_filter = st.selectbox("Exercise (for 1RM chart)", exercises_in_data, key="str_ex")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        filtered = workouts_df.copy()
+        if athlete_filter != "All Athletes" and "athlete_id" in filtered.columns:
+            filtered = filtered[filtered["athlete_id"] == athlete_filter]
+
+        # e1RM chart
+        render_section_header("Estimated 1RM Progression")
+        if exercise_filter:
+            st.plotly_chart(
+                create_e1rm_chart(filtered, exercise_filter), use_container_width=True, config=PLOTLY_CONFIG
+            )
+
+        # Volume charts
+        c1, c2 = st.columns(2)
+        with c1:
+            render_section_header("Weekly Volume")
+            st.plotly_chart(create_weekly_volume_chart(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+        with c2:
+            render_section_header("Volume by Muscle Group")
+            st.plotly_chart(
+                create_muscle_volume_chart(filtered, exercises_df), use_container_width=True, config=PLOTLY_CONFIG
+            )
+
+        # PR Table
+        render_section_header("Personal Records (Top Lifts)")
+        pr_df = filtered.copy()
+        pr_df["w"] = pd.to_numeric(pr_df.get("weight", 0), errors="coerce").fillna(0)
+        pr_df["r"] = pd.to_numeric(pr_df.get("reps", 0), errors="coerce").fillna(0)
+        pr_df["e1rm"] = (pr_df["w"] * (1 + pr_df["r"] / 30)).round(1)
+        pr_table = (
+            pr_df.groupby("exercise")
+            .agg(
+                best_e1rm=("e1rm", "max"),
+                heaviest=("w", "max"),
+                max_reps=("r", "max"),
+                total_sets=("exercise", "count"),
+            )
+            .sort_values("best_e1rm", ascending=False)
+            .reset_index()
+        )
+        pr_table.columns = ["Exercise", "Est. 1RM (kg)", "Heaviest (kg)", "Max Reps", "Total Sets"]
+        st.dataframe(pr_table, use_container_width=True, hide_index=True)
+
+
+# ============================================================
+# PAGE: Nutrition Analytics
+# ============================================================
+elif page == "Nutrition Analytics":
+    st.markdown('<div class="page-title">Nutrition Analytics</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Macro tracking, calorie trends, and meal-level insights</div>',
+        unsafe_allow_html=True,
+    )
+
+    nutrition_df = load_gold_table("gold_nutrition_logs")
+    metrics_df = load_gold_table("gold_body_metrics")
+
+    if nutrition_df.empty:
+        render_empty_state("🥗", "No nutrition data yet. Run the pipeline to see nutrition analytics.")
+    else:
+        # Filter
+        st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
+        athletes_in_data = sorted(nutrition_df["athlete_id"].unique()) if "athlete_id" in nutrition_df.columns else []
+        athlete_filter = st.selectbox("Athlete", ["All Athletes", *athletes_in_data], key="nut_ath")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        filtered = nutrition_df.copy()
+        filtered_metrics = metrics_df.copy()
+        if athlete_filter != "All Athletes":
+            if "athlete_id" in filtered.columns:
+                filtered = filtered[filtered["athlete_id"] == athlete_filter]
+            if "athlete_id" in filtered_metrics.columns:
+                filtered_metrics = filtered_metrics[filtered_metrics["athlete_id"] == athlete_filter]
+
+        # Top KPIs
+        total_cals = pd.to_numeric(filtered.get("calories", 0), errors="coerce")
+        total_protein = pd.to_numeric(filtered.get("protein_g", 0), errors="coerce")
+        n_days = filtered["log_date"].nunique() if "log_date" in filtered.columns else 1
+        avg_daily_cal = total_cals.sum() / max(n_days, 1)
+        avg_daily_protein = total_protein.sum() / max(n_days, 1)
+        avg_weight = (
+            pd.to_numeric(filtered_metrics.get("weight_kg", pd.Series(dtype=float)), errors="coerce").mean()
+            if not filtered_metrics.empty
+            else 0
+        )
+        protein_per_kg = avg_daily_protein / avg_weight if avg_weight > 0 else 0
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            render_metric_card("🔥", "Avg Daily Cal", f"{avg_daily_cal:,.0f}")
+        with k2:
+            render_metric_card("🥩", "Avg Daily Protein", f"{avg_daily_protein:.0f}g")
+        with k3:
+            render_metric_card("⚖️", "Protein/kg", f"{protein_per_kg:.1f}g")
+        with k4:
+            render_metric_card("📅", "Days Tracked", n_days)
+
+        # Charts
+        c1, c2 = st.columns([2, 1])
+        with c1:
+            render_section_header("Calorie Trend")
+            st.plotly_chart(create_calorie_trend(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+        with c2:
+            render_section_header("Macro Split")
+            st.plotly_chart(create_macro_donut(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+
+        render_section_header("Calories by Meal Type")
+        st.plotly_chart(create_meal_distribution(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+
+
+# ============================================================
+# PAGE: Body Composition
+# ============================================================
+elif page == "Body Composition":
+    st.markdown('<div class="page-title">Body Composition</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Weight trends, body fat analysis, and recovery tracking</div>',
+        unsafe_allow_html=True,
+    )
+
+    metrics_df = load_gold_table("gold_body_metrics")
+
+    if metrics_df.empty:
+        render_empty_state("📊", "No body metrics yet. Run the pipeline to see composition data.")
+    else:
+        # Filter
+        st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
+        athletes_in_data = sorted(metrics_df["athlete_id"].unique()) if "athlete_id" in metrics_df.columns else []
+        athlete_filter = st.selectbox("Athlete", ["All Athletes", *athletes_in_data], key="comp_ath")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        filtered = metrics_df.copy()
+        if athlete_filter != "All Athletes" and "athlete_id" in filtered.columns:
+            filtered = filtered[filtered["athlete_id"] == athlete_filter]
+
+        # Top KPIs
+        wt = pd.to_numeric(filtered.get("weight_kg", pd.Series(dtype=float)), errors="coerce")
+        bf = pd.to_numeric(filtered.get("body_fat_pct", pd.Series(dtype=float)), errors="coerce")
+        rhr = pd.to_numeric(filtered.get("resting_heart_rate", pd.Series(dtype=float)), errors="coerce")
+        steps = pd.to_numeric(filtered.get("steps", pd.Series(dtype=float)), errors="coerce")
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            render_metric_card("⚖️", "Latest Weight", f"{wt.iloc[-1]:.1f} kg" if len(wt) > 0 else "—")
+        with k2:
+            render_metric_card("📏", "Avg Body Fat", f"{bf.mean():.1f}%" if len(bf) > 0 else "—")
+        with k3:
+            render_metric_card("❤️", "Avg RHR", f"{rhr.mean():.0f} bpm" if len(rhr) > 0 else "—")
+        with k4:
+            render_metric_card("👟", "Avg Steps", f"{steps.mean():,.0f}" if len(steps) > 0 else "—")
+
+        # Charts row 1
+        c1, c2 = st.columns(2)
+        with c1:
+            render_section_header("Weight Trend")
+            st.plotly_chart(create_weight_trend(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+        with c2:
+            render_section_header("Body Composition")
+            st.plotly_chart(create_body_comp_chart(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+
+        # Charts row 2
+        render_section_header("Recovery & Sleep")
+        st.plotly_chart(create_recovery_chart(filtered), use_container_width=True, config=PLOTLY_CONFIG)
 
 
 # ============================================================
