@@ -33,7 +33,7 @@ FitTrack Pro demonstrates all six of these steps with real, working code -- not 
 
 ## The Athletes
 
-All data in this pipeline is generated from six fictional athletes, each with a distinct training philosophy, body composition, and nutritional approach. Their profiles drive 30 days of realistic, seeded data -- 2,268+ rows total -- that flows through the entire pipeline.
+All data in this pipeline is generated from seven athletes, each with a distinct training philosophy, body composition, and nutritional approach. Their profiles drive 30 days of realistic, seeded data -- 2,600+ rows total -- that flows through the entire pipeline.
 
 ### Marcus Chen -- The Powerlifter
 | | |
@@ -113,11 +113,24 @@ Tyler has the lowest resting heart rate in the dataset (50 bpm), suggesting he d
 
 Aiko is the lightest athlete in the dataset and the only one whose training is primarily bodyweight-based. Pull-ups and dips are her staple movements -- no external load, just body control. She supplements with light barbell squats (45 kg), overhead presses (25 kg), and planks for core stability. Her weight is stable, and her calorie target is the lowest in the group, which makes sense given her smaller frame. In the data, you'll see her exercises often show 0 kg for weight -- that's intentional, as bodyweight movements don't use external load.
 
+### Clement Ohenhen Jr -- The Athletic Builder
+| | |
+|---|---|
+| **Age** | 22 (born June 12, 2003) |
+| **Height / Weight** | 182.9 cm (6'0") / ~78 kg |
+| **Body Fat** | ~11.0% |
+| **Resting HR** | 56 bpm |
+| **Experience** | 4 years |
+| **Schedule** | 5 days/week (Mon, Tue, Thu, Fri, Sat) |
+| **Daily Calories** | 2,900 kcal (2.2g protein/kg) |
+
+Clement is the leanest athlete in the dataset at 11% body fat -- visible six-pack with oblique striations and a shredded, athletic build. His programming follows a push/pull/legs structure during the week with a full-body athletic session on Saturdays (front squats, pull-ups, bench press, and planks). He's in a very slow lean bulk at 0.01 kg/day, maintaining his conditioning while gradually adding strength. His lifts are well-rounded: bench pressing 90 kg, squatting 120 kg, and deadlifting 140 kg, all with solid form. He eats 2,900 calories with 2.2g of protein per kilogram -- fueling growth without sacrificing his leanness. The combination of high training frequency (5 days) and low body fat makes his data particularly interesting for recovery score analysis.
+
 ---
 
 ## How the Pipeline Works (Plain English)
 
-Imagine you're running a gym and six athletes hand you their training logs every day. Some send you neatly typed spreadsheets. Others scribble on napkins. One of them uses kilograms, another uses pounds. Someone misspells "breakfast" as "brekfast."
+Imagine you're running a gym and seven athletes hand you their training logs every day. Some send you neatly typed spreadsheets. Others scribble on napkins. One of them uses kilograms, another uses pounds. Someone misspells "breakfast" as "brekfast."
 
 This pipeline handles all of that. Here's the step-by-step:
 
@@ -206,7 +219,7 @@ py -3 -m pip install streamlit plotly
 py -3 -m streamlit run src/monitor/dashboard.py --server.port 8501
 ```
 
-The demo processes **2,268 rows** across 4 datasets in about 3 seconds:
+The demo processes **2,600+ rows** across 4 datasets in about 3 seconds:
 
 ```
 Dataset              Rows   Score  Grade     Status Gold Table
@@ -308,7 +321,7 @@ fittrack-pipeline/
 |   |-- orchestrator.py            # Pipeline orchestration (facade pattern)
 |   |-- scheduler.py               # Cron-based scheduling
 |-- data/
-|   |-- sample/                    # Generated sample data (2,268+ rows)
+|   |-- sample/                    # Generated sample data (2,600+ rows)
 |   |-- incoming/                  # File drop zone (pipeline watches this)
 |   |-- bronze/                    # Raw ingested data (Parquet)
 |   |-- silver/                    # Cleaned/transformed data (Parquet)
@@ -337,7 +350,7 @@ fittrack-pipeline/
 | **Wger Fitness API** | REST API | Exercise database with muscles, equipment, categories |
 | **USDA FoodData Central** | REST API | Nutritional data for foods |
 | **File Drop Zone** | CSV/JSON files | Workout logs, body metrics, nutrition logs |
-| **Synthetic Generator** | Python script | 2,268+ rows of reproducible multi-athlete data |
+| **Synthetic Generator** | Python script | 2,600+ rows of reproducible multi-athlete data |
 
 The file drop zone watches `data/incoming/` for new files. Drop a CSV or JSON file there, and the pipeline will automatically ingest, process, and load it.
 

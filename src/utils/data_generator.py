@@ -467,6 +467,50 @@ ATHLETES: list[dict[str, Any]] = [
             ],
         },
     },
+    {
+        "name": "Clement Ohenhen Jr",
+        "email": "clementohenhen@gmail.com",
+        "style": "Athletic",
+        "base_weight": 78.0,
+        "weight_trend": 0.01,
+        "body_fat_pct": 11.0,
+        "resting_hr": 56,
+        "training_days": [0, 1, 3, 4, 5],  # Mon, Tue, Thu, Fri, Sat
+        "calorie_target": 2900,
+        "protein_per_kg": 2.2,
+        "templates": {
+            0: [  # Monday - Push
+                ("Barbell Bench Press", 90, 8, True),
+                ("Incline Bench Press", 70, 10, True),
+                ("Dip", 20, 10, False),
+                ("Lateral Raise", 14, 15, False),
+            ],
+            1: [  # Tuesday - Pull
+                ("Barbell Deadlift", 140, 5, True),
+                ("Barbell Row", 75, 8, True),
+                ("Pull-up", 10, 8, True),
+                ("Face Pull", 18, 15, False),
+            ],
+            3: [  # Thursday - Legs
+                ("Barbell Squat", 120, 6, True),
+                ("Romanian Deadlift", 90, 8, True),
+                ("Leg Press", 160, 10, False),
+                ("Calf Raise", 60, 15, False),
+            ],
+            4: [  # Friday - Upper Hypertrophy
+                ("Overhead Press", 50, 8, True),
+                ("Incline Bench Press", 65, 10, True),
+                ("Dumbbell Curl", 16, 12, False),
+                ("Tricep Pushdown", 28, 12, False),
+            ],
+            5: [  # Saturday - Athletic / Full Body
+                ("Front Squat", 80, 6, True),
+                ("Pull-up", 10, 8, True),
+                ("Barbell Bench Press", 80, 8, True),
+                ("Plank", 0, 1, False),
+            ],
+        },
+    },
 ]
 
 

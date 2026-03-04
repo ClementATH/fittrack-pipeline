@@ -50,8 +50,8 @@ class TestGeneratorInit:
         gen = FitTrackDataGenerator(days=7)
         assert gen.days == 7
 
-    def test_six_athletes_loaded(self, generator: FitTrackDataGenerator) -> None:
-        assert len(generator.athletes) == 6
+    def test_seven_athletes_loaded(self, generator: FitTrackDataGenerator) -> None:
+        assert len(generator.athletes) == 7
 
     def test_athlete_emails_unique(self, generator: FitTrackDataGenerator) -> None:
         emails = [a["email"] for a in generator.athletes]
@@ -127,7 +127,7 @@ class TestGenerateAll:
     def test_row_counts_match_expectations(self, generator: FitTrackDataGenerator, output_dir: Path) -> None:
         results = generator.generate_all(output_dir)
         # Body metrics: 6 athletes x 30 days = 180
-        assert results["sample_body_metrics.csv"] == 180
+        assert results["sample_body_metrics.csv"] == 210
         # Exercises: library size
         assert results["sample_exercises.json"] == len(EXERCISE_LIBRARY)
         # Workouts and nutrition should be > 0
@@ -141,7 +141,7 @@ class TestBodyMetrics:
     def test_row_count(self, generator: FitTrackDataGenerator, output_dir: Path) -> None:
         output_dir.mkdir(parents=True, exist_ok=True)
         count = generator.generate_body_metrics(output_dir / "body.csv")
-        assert count == 6 * 30  # 6 athletes, 30 days
+        assert count == 7 * 30  # 7 athletes, 30 days
 
     def test_csv_schema(self, generator: FitTrackDataGenerator, output_dir: Path) -> None:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -439,13 +439,13 @@ class TestEdgeCases:
     def test_single_day_generation(self, tmp_path: Path) -> None:
         gen = FitTrackDataGenerator(seed=42, days=1)
         results = gen.generate_all(tmp_path / "single")
-        assert results["sample_body_metrics.csv"] == 6  # 6 athletes, 1 day
+        assert results["sample_body_metrics.csv"] == 7  # 7 athletes, 1 day
 
     def test_large_generation_completes(self, tmp_path: Path) -> None:
         """90-day generation should complete without errors."""
         gen = FitTrackDataGenerator(seed=42, days=90)
         results = gen.generate_all(tmp_path / "large")
-        assert results["sample_body_metrics.csv"] == 6 * 90
+        assert results["sample_body_metrics.csv"] == 7 * 90
 
     def test_generate_all_is_idempotent(self, generator: FitTrackDataGenerator, tmp_path: Path) -> None:
         """Calling generate_all twice on the same generator yields identical results."""

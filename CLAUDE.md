@@ -1,7 +1,7 @@
 # FitTrack Pro ETL Pipeline
 
 ## Project Overview
-Production-grade ETL pipeline using the Medallion Architecture (Bronze/Silver/Gold) for fitness data. Built with Python 3.10+, DuckDB, Parquet, and Pydantic. Features 6 fictional athletes with 30 days of realistic training, nutrition, and body composition data (2,268+ rows).
+Production-grade ETL pipeline using the Medallion Architecture (Bronze/Silver/Gold) for fitness data. Built with Python 3.10+, DuckDB, Parquet, and Pydantic. Features 7 athletes with 30 days of realistic training, nutrition, and body composition data (2,600+ rows).
 
 ## Architecture
 - **Bronze** (`src/ingestion/`): Raw data intake from APIs and files → Parquet in `data/bronze/`
@@ -55,7 +55,7 @@ Sources (Wger API, USDA API, CSV/JSON files) → Bronze (raw Parquet) → Silver
 Overview · Athlete Profiles · Strength Analytics · Nutrition Analytics · Body Composition · Training Insights · Athlete Comparison · Pipeline Runs · Data Quality · Quality Trends · Health Checks · Alerts
 
 ## Sample Athletes
-Marcus Chen (powerlifter), Priya Sharma (CrossFit), James O'Brien (bodybuilder), Sofia Rodriguez (strength), Tyler Washington (hybrid), Aiko Tanaka (calisthenics)
+Marcus Chen (powerlifter), Priya Sharma (CrossFit), James O'Brien (bodybuilder), Sofia Rodriguez (strength), Tyler Washington (hybrid), Aiko Tanaka (calisthenics), Clement Ohenhen Jr (athletic)
 
 ## Dependencies
 Managed via `pyproject.toml`. Core: duckdb, pandas, pyarrow, pydantic, httpx, rich. Dev: pytest, ruff, mypy. Dashboard: streamlit, plotly.

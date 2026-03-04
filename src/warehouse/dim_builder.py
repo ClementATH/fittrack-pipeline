@@ -216,6 +216,18 @@ class DimensionBuilder:
                         "activity_level": "very_active",
                         "training_experience_years": 3,
                     },
+                    {
+                        "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+                        "email": "clementohenhen@gmail.com",
+                        "username": "clementathletic",
+                        "full_name": "Clement Ohenhen Jr",
+                        "date_of_birth": "2003-06-12",
+                        "gender": "male",
+                        "height_cm": 182.9,
+                        "target_weight_kg": 80.0,
+                        "activity_level": "very_active",
+                        "training_experience_years": 4,
+                    },
                 ]
             )
 

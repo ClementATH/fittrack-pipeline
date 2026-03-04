@@ -1587,10 +1587,10 @@ if page == "Overview":
             and loaded into a structured warehouse ready for analytics.
         </p>
         <p>
-            The pipeline tracks <strong>6 athletes</strong> with distinct training styles
+            The pipeline tracks <strong>7 athletes</strong> with distinct training styles
             across <strong>30 days</strong> of data &mdash; powerlifting, CrossFit,
             bodybuilding, strength, hybrid, and calisthenics &mdash; generating
-            <strong>2,268+ rows</strong> of realistic training, nutrition, and body composition data.
+            <strong>2,600+ rows</strong> of realistic training, nutrition, and body composition data.
         </p>
     </div>
     """,
@@ -1844,6 +1844,13 @@ if page == "Overview":
             "color": "#4ECDC4",
             "bio": "Lightest athlete, primarily bodyweight-based. Pull-ups and dips as staples with light barbell work. Most exercises show 0 kg load.",
             "schedule": "4 days/week",
+        },
+        "clementohenhen@gmail.com": {
+            "initials": "CO",
+            "style": "Athletic",
+            "color": "#E040FB",
+            "bio": "Lean and shredded at ~11% body fat. Push/pull/legs with a Saturday full-body athletic session. Balanced strength and aesthetics with progressive overload.",
+            "schedule": "5 days/week",
         },
     }
 
