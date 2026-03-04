@@ -1083,6 +1083,156 @@ def create_recovery_chart(metrics_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
+def create_workout_frequency_chart(workouts_df: pd.DataFrame) -> go.Figure:
+    """Weekly workout session count as a bar chart."""
+    df = workouts_df.copy()
+    date_col = "workout_date" if "workout_date" in df.columns else "date"
+    df["dt"] = pd.to_datetime(df[date_col], errors="coerce")
+    df["week"] = df["dt"].dt.isocalendar().week.astype(int)
+    # Count unique training days per week
+    weekly_sessions = df.groupby("week")["dt"].apply(lambda x: x.dt.date.nunique()).reset_index()
+    weekly_sessions.columns = ["week", "sessions"]
+    weekly_sessions["label"] = "W" + weekly_sessions["week"].astype(str)
+
+    fig = go.Figure()
+    colors = ["#FF3D71" if s < 3 else "#FFAA00" if s < 4 else "#00D68F" for s in weekly_sessions["sessions"]]
+    fig.add_trace(
+        go.Bar(
+            x=weekly_sessions["label"],
+            y=weekly_sessions["sessions"],
+            marker=dict(color=colors, cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>Sessions: %{y}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=300,
+        title=dict(text="Weekly Training Frequency", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Sessions",
+    )
+    fig.update_yaxes(dtick=1)
+    return fig
+
+
+def create_muscle_balance_radar(workouts_df: pd.DataFrame, exercises_df: pd.DataFrame) -> go.Figure:
+    """Radar chart showing volume distribution across muscle groups."""
+    df = workouts_df.copy()
+    df["w"] = pd.to_numeric(df.get("weight", 0), errors="coerce").fillna(0)
+    df["r"] = pd.to_numeric(df.get("reps", 0), errors="coerce").fillna(0)
+    df["vol"] = df["w"] * df["r"]
+
+    muscle_map: dict[str, str] = {}
+    if not exercises_df.empty and "name" in exercises_df.columns and "primary_muscle" in exercises_df.columns:
+        muscle_map = dict(zip(exercises_df["name"], exercises_df["primary_muscle"], strict=False))
+    df["muscle"] = df["exercise"].map(muscle_map).fillna("other")
+    mv = df.groupby("muscle")["vol"].sum()
+    mv = mv[mv.index != "other"]
+
+    if mv.empty:
+        fig = go.Figure()
+        fig.update_layout(**get_plotly_defaults(), height=350)
+        return fig
+
+    labels = [m.replace("_", " ").title() for m in mv.index]
+    values = mv.values.tolist()
+    # Close the radar
+    labels.append(labels[0])
+    values.append(values[0])
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatterpolar(
+            r=values,
+            theta=labels,
+            fill="toself",
+            fillcolor="rgba(108, 99, 255, 0.15)",
+            line=dict(color="#6C63FF", width=2),
+            marker=dict(size=6, color="#6C63FF"),
+        )
+    )
+    fig.update_layout(
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(
+                visible=True, gridcolor="rgba(255,255,255,0.08)", tickfont=dict(size=10, color="rgba(250,250,250,0.4)")
+            ),
+            angularaxis=dict(gridcolor="rgba(255,255,255,0.08)", tickfont=dict(size=11, color="#FAFAFA")),
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif", color="#FAFAFA"),
+        height=400,
+        margin=dict(l=60, r=60, t=50, b=40),
+        title=dict(text="Muscle Group Balance", font=dict(size=15)),
+        showlegend=False,
+    )
+    return fig
+
+
+def create_comparison_weight_chart(df1: pd.DataFrame, df2: pd.DataFrame, name1: str, name2: str) -> go.Figure:
+    """Overlay weight trends for two athletes."""
+    fig = go.Figure()
+    for df, name, color in [(df1, name1, "#6C63FF"), (df2, name2, "#00D68F")]:
+        d = df.copy()
+        date_col = "measured_at" if "measured_at" in d.columns else "date"
+        d["dt"] = pd.to_datetime(d[date_col], errors="coerce")
+        d["w"] = pd.to_numeric(d.get("weight_kg", 0), errors="coerce")
+        d = d.sort_values("dt")
+        fig.add_trace(
+            go.Scatter(
+                x=d["dt"],
+                y=d["w"],
+                mode="lines+markers",
+                name=name,
+                line=dict(color=color, width=2),
+                marker=dict(size=5),
+                hovertemplate=f"<b>{name}</b><br>%{{x|%b %d}}: %{{y:.1f}} kg<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        title=dict(text="Weight Comparison", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="kg",
+    )
+    return fig
+
+
+def create_comparison_volume_chart(df1: pd.DataFrame, df2: pd.DataFrame, name1: str, name2: str) -> go.Figure:
+    """Overlay weekly volume for two athletes."""
+    fig = go.Figure()
+    for df, name, color in [(df1, name1, "#6C63FF"), (df2, name2, "#00D68F")]:
+        d = df.copy()
+        d["w"] = pd.to_numeric(d.get("weight", 0), errors="coerce").fillna(0)
+        d["r"] = pd.to_numeric(d.get("reps", 0), errors="coerce").fillna(0)
+        d["vol"] = d["w"] * d["r"]
+        date_col = "workout_date" if "workout_date" in d.columns else "date"
+        d["dt"] = pd.to_datetime(d[date_col], errors="coerce")
+        d["week"] = d["dt"].dt.isocalendar().week.astype(int)
+        weekly = d.groupby("week")["vol"].sum().reset_index()
+        weekly["label"] = "W" + weekly["week"].astype(str)
+        fig.add_trace(
+            go.Bar(
+                x=weekly["label"],
+                y=weekly["vol"].round(0),
+                name=name,
+                marker=dict(color=color, opacity=0.7, cornerradius=4),
+                hovertemplate=f"<b>{name}</b><br>%{{x}}: %{{y:,.0f}} kg<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        **get_plotly_defaults(),
+        height=350,
+        barmode="group",
+        title=dict(text="Weekly Volume Comparison", font=dict(size=15)),
+        xaxis_title="",
+        yaxis_title="Volume (kg)",
+    )
+    return fig
+
+
 # ============================================================
 # Data loaders (unchanged logic)
 # ============================================================
@@ -1228,6 +1378,8 @@ with st.sidebar:
             "Strength Analytics",
             "Nutrition Analytics",
             "Body Composition",
+            "Training Insights",
+            "Athlete Comparison",
             "Pipeline Runs",
             "Data Quality",
             "Quality Trends",
@@ -1288,6 +1440,46 @@ if page == "Overview":
             render_metric_card("🥈", "Silver (Clean)", f"{file_counts.get('silver', 0)}")
         with lc3:
             render_metric_card("🥇", "Gold (Business)", f"{file_counts.get('gold', 0)}")
+
+    # Athlete & Training Summary
+    render_section_header("Training Summary")
+    workouts_overview = load_gold_table("gold_workouts")
+    nutrition_overview = load_gold_table("gold_nutrition_logs")
+    if not workouts_overview.empty:
+        wt_num = (
+            pd.to_numeric(workouts_overview["weight"], errors="coerce").fillna(0)
+            if "weight" in workouts_overview.columns
+            else pd.Series(0, index=workouts_overview.index)
+        )
+        rp_num = (
+            pd.to_numeric(workouts_overview["reps"], errors="coerce").fillna(0)
+            if "reps" in workouts_overview.columns
+            else pd.Series(0, index=workouts_overview.index)
+        )
+        total_volume = (wt_num * rp_num).sum()
+        n_athletes = workouts_overview["athlete_id"].nunique() if "athlete_id" in workouts_overview.columns else 0
+        n_sessions = workouts_overview["workout_date"].nunique() if "workout_date" in workouts_overview.columns else 0
+        avg_daily_cal = 0.0
+        if (
+            not nutrition_overview.empty
+            and "log_date" in nutrition_overview.columns
+            and "calories" in nutrition_overview.columns
+        ):
+            avg_daily_cal = float(
+                pd.to_numeric(nutrition_overview["calories"], errors="coerce")
+                .groupby(nutrition_overview["log_date"])
+                .sum()
+                .mean()
+            )
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            render_metric_card("🏋️", "Athletes", n_athletes)
+        with s2:
+            render_metric_card("📊", "Total Volume", f"{total_volume:,.0f} kg")
+        with s3:
+            render_metric_card("📅", "Training Days", n_sessions)
+        with s4:
+            render_metric_card("🔥", "Avg Daily Cal", f"{avg_daily_cal:,.0f}")
 
     # Recent pipeline runs
     render_section_header("Recent Pipeline Runs")
@@ -1633,6 +1825,239 @@ elif page == "Body Composition":
         # Charts row 2
         render_section_header("Recovery & Sleep")
         st.plotly_chart(create_recovery_chart(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+
+
+# ============================================================
+# PAGE: Training Insights
+# ============================================================
+elif page == "Training Insights":
+    st.markdown('<div class="page-title">Training Insights</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Workout patterns, consistency metrics, and muscle balance analysis</div>',
+        unsafe_allow_html=True,
+    )
+
+    workouts_df = load_gold_table("gold_workouts")
+    exercises_df = load_gold_table("gold_exercises")
+
+    if workouts_df.empty:
+        render_empty_state("📈", "No workout data yet. Run the pipeline to see training insights.")
+    else:
+        # Filter
+        st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
+        athletes_in_data = sorted(workouts_df["athlete_id"].unique()) if "athlete_id" in workouts_df.columns else []
+        athlete_filter = st.selectbox("Athlete", ["All Athletes", *athletes_in_data], key="ti_ath")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        filtered = workouts_df.copy()
+        if athlete_filter != "All Athletes" and "athlete_id" in filtered.columns:
+            filtered = filtered[filtered["athlete_id"] == athlete_filter]
+
+        # Consistency KPIs
+        date_col = "workout_date" if "workout_date" in filtered.columns else "date"
+        dates = pd.to_datetime(filtered[date_col], errors="coerce").dt.date
+        unique_days = sorted(dates.dropna().unique())
+        total_days = (unique_days[-1] - unique_days[0]).days + 1 if len(unique_days) > 1 else 1
+        training_days = len(unique_days)
+        rest_days = total_days - training_days
+        freq = training_days / max(total_days / 7, 1)
+
+        # Streak calculation
+        streak = 0
+        if len(unique_days) > 1:
+            current_streak = 1
+            max_streak = 1
+            for i in range(1, len(unique_days)):
+                gap = (unique_days[i] - unique_days[i - 1]).days
+                if gap <= 2:  # Allow 1 rest day between sessions
+                    current_streak += 1
+                    max_streak = max(max_streak, current_streak)
+                else:
+                    current_streak = 1
+            streak = max_streak
+
+        # Unique exercises
+        n_exercises = filtered["exercise"].nunique() if "exercise" in filtered.columns else 0
+
+        k1, k2, k3, k4, k5 = st.columns(5)
+        with k1:
+            render_metric_card("📅", "Training Days", training_days)
+        with k2:
+            render_metric_card("😴", "Rest Days", rest_days)
+        with k3:
+            render_metric_card("🔥", "Sessions/Week", f"{freq:.1f}")
+        with k4:
+            render_metric_card("⚡", "Best Streak", f"{streak} days")
+        with k5:
+            render_metric_card("🎯", "Exercises Used", n_exercises)
+
+        # Charts
+        c1, c2 = st.columns(2)
+        with c1:
+            render_section_header("Weekly Frequency")
+            st.plotly_chart(create_workout_frequency_chart(filtered), use_container_width=True, config=PLOTLY_CONFIG)
+        with c2:
+            render_section_header("Muscle Balance")
+            st.plotly_chart(
+                create_muscle_balance_radar(filtered, exercises_df), use_container_width=True, config=PLOTLY_CONFIG
+            )
+
+        # Exercise breakdown table
+        render_section_header("Exercise Breakdown")
+        if "exercise" in filtered.columns:
+            ex_df = filtered.copy()
+            ex_df["w"] = pd.to_numeric(ex_df.get("weight", 0), errors="coerce").fillna(0)
+            ex_df["r"] = pd.to_numeric(ex_df.get("reps", 0), errors="coerce").fillna(0)
+            ex_df["vol"] = ex_df["w"] * ex_df["r"]
+            ex_summary = (
+                ex_df.groupby("exercise")
+                .agg(
+                    total_sets=("exercise", "count"),
+                    avg_weight=("w", "mean"),
+                    avg_reps=("r", "mean"),
+                    total_volume=("vol", "sum"),
+                )
+                .round(1)
+                .sort_values("total_volume", ascending=False)
+                .reset_index()
+            )
+            ex_summary.columns = ["Exercise", "Total Sets", "Avg Weight (kg)", "Avg Reps", "Total Volume (kg)"]
+            st.dataframe(ex_summary, use_container_width=True, hide_index=True)
+
+
+# ============================================================
+# PAGE: Athlete Comparison
+# ============================================================
+elif page == "Athlete Comparison":
+    st.markdown('<div class="page-title">Athlete Comparison</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Side-by-side analysis of two athletes across all metrics</div>',
+        unsafe_allow_html=True,
+    )
+
+    metrics_df = load_gold_table("gold_body_metrics")
+    workouts_df = load_gold_table("gold_workouts")
+    nutrition_df = load_gold_table("gold_nutrition_logs")
+    athletes_df = load_gold_table("dim_athletes")
+
+    all_ids: set[str] = set()
+    for check_df in [metrics_df, workouts_df]:
+        if "athlete_id" in check_df.columns:
+            all_ids.update(check_df["athlete_id"].unique())
+    all_ids_sorted = sorted(all_ids)
+
+    if len(all_ids_sorted) < 2:
+        render_empty_state("👥", "Need at least 2 athletes for comparison. Run the pipeline with full data.")
+    else:
+        cmp_name_map: dict[str, str] = {}
+        if not athletes_df.empty and "email" in athletes_df.columns:
+            cmp_name_map = dict(
+                zip(athletes_df["email"], athletes_df.get("full_name", athletes_df["email"]), strict=False)
+            )
+
+        # Selectors
+        st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1:
+            a1 = st.selectbox("Athlete A", all_ids_sorted, index=0, key="cmp_a1")
+        with c2:
+            other = [x for x in all_ids_sorted if x != a1]
+            a2 = st.selectbox("Athlete B", other, index=0, key="cmp_a2")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        n1 = cmp_name_map.get(a1, a1.split("@")[0].replace(".", " ").title())
+        n2 = cmp_name_map.get(a2, a2.split("@")[0].replace(".", " ").title())
+
+        m1 = metrics_df[metrics_df["athlete_id"] == a1] if "athlete_id" in metrics_df.columns else pd.DataFrame()
+        m2 = metrics_df[metrics_df["athlete_id"] == a2] if "athlete_id" in metrics_df.columns else pd.DataFrame()
+        w1 = workouts_df[workouts_df["athlete_id"] == a1] if "athlete_id" in workouts_df.columns else pd.DataFrame()
+        w2 = workouts_df[workouts_df["athlete_id"] == a2] if "athlete_id" in workouts_df.columns else pd.DataFrame()
+        nu1 = nutrition_df[nutrition_df["athlete_id"] == a1] if "athlete_id" in nutrition_df.columns else pd.DataFrame()
+        nu2 = nutrition_df[nutrition_df["athlete_id"] == a2] if "athlete_id" in nutrition_df.columns else pd.DataFrame()
+
+        # Side-by-side KPIs
+        render_section_header("Key Metrics")
+
+        def _stat(df: pd.DataFrame, col: str) -> float:
+            if df.empty or col not in df.columns:
+                return 0.0
+            return float(pd.to_numeric(df[col], errors="coerce").mean())
+
+        def _daily_cal(ndf: pd.DataFrame) -> float:
+            if ndf.empty or "log_date" not in ndf.columns or "calories" not in ndf.columns:
+                return 0.0
+            return float(pd.to_numeric(ndf["calories"], errors="coerce").groupby(ndf["log_date"]).sum().mean())
+
+        rows = [
+            ("Avg Weight", f"{_stat(m1, 'weight_kg'):.1f} kg", f"{_stat(m2, 'weight_kg'):.1f} kg"),
+            ("Avg Body Fat", f"{_stat(m1, 'body_fat_pct'):.1f}%", f"{_stat(m2, 'body_fat_pct'):.1f}%"),
+            ("Avg Recovery", f"{_stat(m1, 'recovery_score'):.0f}", f"{_stat(m2, 'recovery_score'):.0f}"),
+            ("Total Sets", f"{len(w1):,}", f"{len(w2):,}"),
+            ("Avg Daily Cal", f"{_daily_cal(nu1):,.0f}", f"{_daily_cal(nu2):,.0f}"),
+        ]
+
+        header_html = f"""
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 0.5rem;">
+            <div style="color: rgba(250,250,250,0.4); font-size: 0.8rem; padding: 0.5rem;"></div>
+            <div style="color: #6C63FF; font-weight: 700; font-size: 0.95rem; text-align: center; padding: 0.5rem;">{n1}</div>
+            <div style="color: #00D68F; font-weight: 700; font-size: 0.95rem; text-align: center; padding: 0.5rem;">{n2}</div>
+        </div>
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
+
+        for label, v1, v2 in rows:
+            st.markdown(
+                f"""
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+                        background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 4px;">
+                <div style="color: rgba(250,250,250,0.6); font-size: 0.85rem; padding: 0.6rem 0.75rem;">{label}</div>
+                <div style="color: #FAFAFA; font-weight: 600; font-size: 1rem; text-align: center; padding: 0.6rem;">{v1}</div>
+                <div style="color: #FAFAFA; font-weight: 600; font-size: 1rem; text-align: center; padding: 0.6rem;">{v2}</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+        # Overlay charts
+        ch1, ch2 = st.columns(2)
+        with ch1:
+            render_section_header("Weight Trends")
+            if not m1.empty or not m2.empty:
+                st.plotly_chart(
+                    create_comparison_weight_chart(m1, m2, n1, n2), use_container_width=True, config=PLOTLY_CONFIG
+                )
+        with ch2:
+            render_section_header("Volume Trends")
+            if not w1.empty or not w2.empty:
+                st.plotly_chart(
+                    create_comparison_volume_chart(w1, w2, n1, n2), use_container_width=True, config=PLOTLY_CONFIG
+                )
+
+        # Strength comparison table
+        render_section_header("Strength Comparison")
+        common_exercises: set[str] = set()
+        if "exercise" in w1.columns and "exercise" in w2.columns:
+            common_exercises = set(w1["exercise"].unique()) & set(w2["exercise"].unique())
+        if common_exercises:
+            strength_rows = []
+            for ex in sorted(common_exercises):
+                e1_w = pd.to_numeric(w1[w1["exercise"] == ex]["weight"], errors="coerce")
+                e2_w = pd.to_numeric(w2[w2["exercise"] == ex]["weight"], errors="coerce")
+                e1_r = pd.to_numeric(w1[w1["exercise"] == ex]["reps"], errors="coerce")
+                e2_r = pd.to_numeric(w2[w2["exercise"] == ex]["reps"], errors="coerce")
+                e1rm_1 = float((e1_w * (1 + e1_r / 30)).max()) if not e1_w.empty else 0
+                e1rm_2 = float((e2_w * (1 + e2_r / 30)).max()) if not e2_w.empty else 0
+                strength_rows.append(
+                    {
+                        "Exercise": ex,
+                        f"{n1} e1RM": round(e1rm_1, 1),
+                        f"{n2} e1RM": round(e1rm_2, 1),
+                        "Difference": round(e1rm_1 - e1rm_2, 1),
+                    }
+                )
+            st.dataframe(pd.DataFrame(strength_rows).sort_values("Exercise"), use_container_width=True, hide_index=True)
+        else:
+            render_empty_state("💪", "No shared exercises between these athletes.")
 
 
 # ============================================================

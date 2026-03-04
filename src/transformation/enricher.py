@@ -96,9 +96,7 @@ class DataEnricher:
 
         # Compound score: 1 (isolation) to 5 (full body compound)
         if "secondary_muscles" in df.columns:
-            df["compound_score"] = df["secondary_muscles"].apply(
-                lambda x: 1 + len(x) if isinstance(x, list) else 1
-            )
+            df["compound_score"] = df["secondary_muscles"].apply(lambda x: 1 + len(x) if isinstance(x, list) else 1)
         else:
             df["compound_score"] = 1
 
@@ -132,7 +130,10 @@ class DataEnricher:
         Adds:
           - day_of_week: Name of the day
           - week_number: ISO week number
-          - volume_per_set: Average volume per working set
+          - set_volume_kg: Per-set volume (weight x reps)
+          - estimated_1rm: Epley formula (weight x (1 + reps/30))
+          - intensity_zone: RPE-based zone (warm-up / working / max effort)
+          - volume_per_set: Average volume per working set (session-level)
           - training_phase: Inferred from week progression
         """
         df = df.copy()
@@ -144,7 +145,27 @@ class DataEnricher:
             df["week_number"] = dates.dt.isocalendar().week.astype("Int64")
             df["month"] = dates.dt.month
 
-        # Volume per set (if volume and set data available)
+        # ── Per-set calculations ──
+        # LEARN: Estimated 1RM (Epley formula) lets us track strength progress
+        # even when rep ranges change. A lifter squatting 100kg x 8 and 120kg x 3
+        # can be compared: e1RM = 100*(1+8/30) = 126.7 vs 120*(1+3/30) = 132.0.
+        if "weight" in df.columns and "reps" in df.columns:
+            weight = pd.to_numeric(df["weight"], errors="coerce")
+            reps = pd.to_numeric(df["reps"], errors="coerce")
+            df["set_volume_kg"] = (weight * reps).round(1)
+            df["estimated_1rm"] = (weight * (1 + reps / 30)).round(1)
+
+        # RPE-based intensity zones
+        if "rpe" in df.columns:
+            rpe = pd.to_numeric(df["rpe"], errors="coerce")
+            df["intensity_zone"] = pd.cut(
+                rpe,
+                bins=[0, 7.0, 8.0, 9.0, 10.0],
+                labels=["warm_up", "working", "hard", "max_effort"],
+                right=True,
+            )
+
+        # Volume per set (if session-level volume and set data available)
         if "total_volume_kg" in df.columns and "total_sets" in df.columns:
             df["volume_per_set"] = (
                 pd.to_numeric(df["total_volume_kg"], errors="coerce")
@@ -202,9 +223,7 @@ class DataEnricher:
             # Normalize stress (invert: low stress = high recovery)
             if "stress_level" in df.columns:
                 df["_stress_inv"] = 10 - df["stress_level"]
-                available_for_calc = [
-                    c if c != "stress_level" else "_stress_inv" for c in available
-                ]
+                available_for_calc = [c if c != "stress_level" else "_stress_inv" for c in available]
             else:
                 available_for_calc = available
             # Simple average as recovery index
@@ -226,9 +245,21 @@ class DataEnricher:
         """
         df = df.copy()
 
-        protein = pd.to_numeric(df.get("protein_g", 0), errors="coerce").fillna(0)
-        carbs = pd.to_numeric(df.get("carbs_g", 0), errors="coerce").fillna(0)
-        fats = pd.to_numeric(df.get("fats_g", 0), errors="coerce").fillna(0)
+        protein = (
+            pd.to_numeric(df["protein_g"], errors="coerce").fillna(0)
+            if "protein_g" in df.columns
+            else pd.Series(0, index=df.index)
+        )
+        carbs = (
+            pd.to_numeric(df["carbs_g"], errors="coerce").fillna(0)
+            if "carbs_g" in df.columns
+            else pd.Series(0, index=df.index)
+        )
+        fats = (
+            pd.to_numeric(df["fats_g"], errors="coerce").fillna(0)
+            if "fats_g" in df.columns
+            else pd.Series(0, index=df.index)
+        )
 
         # Calorie contributions per macro
         # Protein: 4 cal/g, Carbs: 4 cal/g, Fats: 9 cal/g

@@ -46,13 +46,13 @@ docker compose up dashboard                           # Start dashboard
 - Design patterns: Strategy (ingestors), Facade (orchestrator), Builder (dimensions)
 - Data contracts in `src/quality/contracts/` enforce Silver-layer schemas via Pydantic
 - Synthetic data generator in `src/utils/data_generator.py` for reproducible demo datasets
-- Tests in `tests/` mirror `src/` structure. ~140 tests, all should pass.
+- Tests in `tests/` mirror `src/` structure. ~186 tests, all should pass.
 
 ## Data Flow
 Sources (Wger API, USDA API, CSV/JSON files) → Bronze (raw Parquet) → Silver (cleaned Parquet) → Quality Gate → Gold (DuckDB star schema)
 
-## Dashboard (10 pages)
-Overview · Athlete Profiles · Strength Analytics · Nutrition Analytics · Body Composition · Pipeline Runs · Data Quality · Quality Trends · Health Checks · Alerts
+## Dashboard (12 pages)
+Overview · Athlete Profiles · Strength Analytics · Nutrition Analytics · Body Composition · Training Insights · Athlete Comparison · Pipeline Runs · Data Quality · Quality Trends · Health Checks · Alerts
 
 ## Sample Athletes
 Marcus Chen (powerlifter), Priya Sharma (CrossFit), James O'Brien (bodybuilder), Sofia Rodriguez (strength), Tyler Washington (hybrid), Aiko Tanaka (calisthenics)
