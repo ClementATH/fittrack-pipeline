@@ -315,6 +315,172 @@ def inject_custom_css() -> None:
         font-size: 3rem;
         margin-bottom: 1rem;
     }
+
+    /* ── Hero description block ── */
+    .hero-block {
+        background: linear-gradient(135deg, rgba(108, 99, 255, 0.08) 0%, rgba(0, 214, 143, 0.06) 100%);
+        border: 1px solid rgba(108, 99, 255, 0.15);
+        border-radius: 16px;
+        padding: 1.75rem 2rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.7;
+    }
+    .hero-block p {
+        color: rgba(250, 250, 250, 0.7);
+        font-size: 0.92rem;
+        margin: 0 0 0.75rem 0;
+    }
+    .hero-block p:last-child { margin-bottom: 0; }
+    .hero-block strong { color: #FAFAFA; }
+    .hero-block .hero-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #FAFAFA;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ── Architecture flow ── */
+    .arch-flow {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        margin: 1rem 0 1.5rem 0;
+    }
+    .arch-stage {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    .arch-stage:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-2px);
+    }
+    .arch-stage .stage-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .arch-stage .stage-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #FAFAFA;
+        margin-bottom: 0.25rem;
+    }
+    .arch-stage .stage-desc {
+        font-size: 0.75rem;
+        color: rgba(250, 250, 250, 0.45);
+        line-height: 1.4;
+    }
+    .arch-arrow {
+        display: flex;
+        align-items: center;
+        padding: 0 0.5rem;
+        font-size: 1.4rem;
+        color: rgba(108, 99, 255, 0.5);
+    }
+
+    /* ── Athlete portrait card (overview) ── */
+    .portrait-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+    }
+    .portrait-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(108, 99, 255, 0.12);
+    }
+    .portrait-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .portrait-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #FAFAFA;
+        flex-shrink: 0;
+    }
+    .portrait-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #FAFAFA;
+        line-height: 1.2;
+    }
+    .portrait-style {
+        font-size: 0.72rem;
+        color: rgba(250, 250, 250, 0.45);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .portrait-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    .portrait-stat-label {
+        font-size: 0.65rem;
+        color: rgba(250, 250, 250, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .portrait-stat-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #FAFAFA;
+    }
+    .portrait-bio {
+        font-size: 0.78rem;
+        color: rgba(250, 250, 250, 0.55);
+        line-height: 1.5;
+        margin-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding-top: 0.75rem;
+    }
+
+    /* ── Quality mini bar ── */
+    .quality-mini {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.6rem;
+    }
+    .quality-mini-label {
+        font-size: 0.78rem;
+        color: rgba(250, 250, 250, 0.55);
+        min-width: 100px;
+    }
+    .quality-mini-bar {
+        flex: 1;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .quality-mini-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+    .quality-mini-score {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #FAFAFA;
+        min-width: 55px;
+        text-align: right;
+    }
     </style>
     """,
         unsafe_allow_html=True,
@@ -1406,28 +1572,105 @@ if page == "Overview":
         '<div class="page-subtitle">Real-time status of the FitTrack Pro ETL pipeline</div>', unsafe_allow_html=True
     )
 
+    # ── Hero description block ──
+    st.markdown(
+        """
+    <div class="hero-block">
+        <div class="hero-title">What is FitTrack Pro?</div>
+        <p>
+            FitTrack Pro is a <strong>production-grade ETL pipeline</strong> that processes
+            fitness data the same way companies like Spotify, Netflix, and Airbnb process
+            theirs &mdash; applied to the gym instead of music or movies. Raw workout logs,
+            body measurements, and nutrition records are collected from multiple sources,
+            cleaned and enriched with calculated metrics like <strong>estimated 1-rep max</strong>
+            and <strong>training volume</strong>, validated through a quality gate,
+            and loaded into a structured warehouse ready for analytics.
+        </p>
+        <p>
+            The pipeline tracks <strong>6 athletes</strong> with distinct training styles
+            across <strong>30 days</strong> of data &mdash; powerlifting, CrossFit,
+            bodybuilding, strength, hybrid, and calisthenics &mdash; generating
+            <strong>2,268+ rows</strong> of realistic training, nutrition, and body composition data.
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Architecture flow diagram ──
+    render_section_header("Pipeline Architecture")
+    st.markdown(
+        """
+    <div class="arch-flow">
+        <div class="arch-stage" style="border-left: 3px solid #FFAA00;">
+            <div class="stage-icon">📥</div>
+            <div class="stage-name">Sources</div>
+            <div class="stage-desc">Wger API &bull; USDA API<br>CSV &bull; JSON files</div>
+        </div>
+        <div class="arch-arrow">&#10132;</div>
+        <div class="arch-stage" style="border-left: 3px solid #CD7F32;">
+            <div class="stage-icon">🥉</div>
+            <div class="stage-name">Bronze</div>
+            <div class="stage-desc">Raw data preserved<br>exactly as received</div>
+        </div>
+        <div class="arch-arrow">&#10132;</div>
+        <div class="arch-stage" style="border-left: 3px solid #C0C0C0;">
+            <div class="stage-icon">🥈</div>
+            <div class="stage-name">Silver</div>
+            <div class="stage-desc">Cleaned &bull; Transformed<br>Enriched with e1RM &amp; volume</div>
+        </div>
+        <div class="arch-arrow">&#10132;</div>
+        <div class="arch-stage" style="border-left: 3px solid #6C63FF;">
+            <div class="stage-icon">🛡️</div>
+            <div class="stage-name">Quality Gate</div>
+            <div class="stage-desc">Score 0&ndash;100<br>Must pass &ge; 50 to proceed</div>
+        </div>
+        <div class="arch-arrow">&#10132;</div>
+        <div class="arch-stage" style="border-left: 3px solid #FFD700;">
+            <div class="stage-icon">🥇</div>
+            <div class="stage-name">Gold</div>
+            <div class="stage-desc">DuckDB warehouse<br>Star schema analytics</div>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Load all data for Overview ──
     runs_df = load_pipeline_runs()
     alerts = load_alerts()
     file_counts = count_gold_files()
+    scores_df = load_quality_scores()
+    workouts_overview = load_gold_table("gold_workouts")
+    nutrition_overview = load_gold_table("gold_nutrition_logs")
+    metrics_overview = load_gold_table("gold_body_metrics")
+    athletes_df = load_gold_table("dim_athletes")
 
     total_runs = len(runs_df) if not runs_df.empty else 0
     success_runs = (
         len(runs_df[runs_df["status"] == "success"]) if not runs_df.empty and "status" in runs_df.columns else 0
     )
     total_files = sum(file_counts.values())
+    success_rate = (success_runs / total_runs * 100) if total_runs > 0 else 0.0
+    total_rows = (
+        int(runs_df["rows_processed"].sum()) if not runs_df.empty and "rows_processed" in runs_df.columns else 0
+    )
 
-    # Top metrics
-    col1, col2, col3, col4 = st.columns(4)
+    # ── Pipeline Health metrics ──
+    render_section_header("Pipeline Health")
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         render_metric_card("🔄", "Total Runs", total_runs, "info")
     with col2:
-        render_metric_card("✅", "Successful", success_runs, "success")
+        render_metric_card("✅", "Success Rate", f"{success_rate:.0f}%", "success")
     with col3:
-        render_metric_card("🚨", "Active Alerts", len(alerts), "danger" if alerts else "")
+        render_metric_card("📊", "Rows Processed", f"{total_rows:,}")
     with col4:
+        render_metric_card("🚨", "Active Alerts", len(alerts), "danger" if alerts else "")
+    with col5:
         render_metric_card("📁", "Data Files", total_files)
 
-    # Data layer status
+    # ── Data Layer Status ──
     render_section_header("Data Layer Status")
     col_chart, col_metrics = st.columns([2, 3])
     with col_chart:
@@ -1441,10 +1684,54 @@ if page == "Overview":
         with lc3:
             render_metric_card("🥇", "Gold (Business)", f"{file_counts.get('gold', 0)}")
 
-    # Athlete & Training Summary
+    # ── Quality Snapshot ──
+    render_section_header("Data Quality Snapshot")
+    if not scores_df.empty and "table_name" in scores_df.columns and "overall_score" in scores_df.columns:
+        latest_scores = (
+            scores_df.sort_values("scored_at", ascending=False).drop_duplicates("table_name")
+            if "scored_at" in scores_df.columns
+            else scores_df.drop_duplicates("table_name")
+        )
+        avg_quality = latest_scores["overall_score"].mean()
+        avg_grade = get_grade(avg_quality)
+        grade_color = "#00D68F" if avg_quality >= 90 else "#FFAA00" if avg_quality >= 70 else "#FF3D71"
+
+        qc1, qc2 = st.columns([1, 3])
+        with qc1:
+            st.markdown(
+                f"""
+            <div class="glass-card" style="text-align: center; padding: 1.25rem;">
+                <div style="font-size: 0.75rem; color: rgba(250,250,250,0.45); text-transform: uppercase; letter-spacing: 0.06em;">Avg Score</div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: {grade_color};">{avg_quality:.1f}</div>
+                <div style="font-size: 1.2rem; font-weight: 600; color: {grade_color};">Grade: {avg_grade}</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+        with qc2:
+            for _, row in latest_scores.iterrows():
+                tbl = str(row["table_name"])
+                score = float(row["overall_score"])
+                grade = get_grade(score)
+                bar_color = "#00D68F" if score >= 90 else "#FFAA00" if score >= 70 else "#FF3D71"
+                display_name = tbl.replace("_", " ").replace("gold ", "").title()
+                st.markdown(
+                    f"""
+                <div class="quality-mini">
+                    <div class="quality-mini-label">{display_name}</div>
+                    <div class="quality-mini-bar">
+                        <div class="quality-mini-fill" style="width: {score}%; background: {bar_color};"></div>
+                    </div>
+                    <div class="quality-mini-score" style="color: {bar_color};">{score:.1f} {grade}</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+    else:
+        render_empty_state("🛡️", "No quality scores yet. Run the pipeline to see quality metrics.")
+
+    # ── Training Summary ──
     render_section_header("Training Summary")
-    workouts_overview = load_gold_table("gold_workouts")
-    nutrition_overview = load_gold_table("gold_nutrition_logs")
     if not workouts_overview.empty:
         wt_num = (
             pd.to_numeric(workouts_overview["weight"], errors="coerce").fillna(0)
@@ -1459,6 +1746,8 @@ if page == "Overview":
         total_volume = (wt_num * rp_num).sum()
         n_athletes = workouts_overview["athlete_id"].nunique() if "athlete_id" in workouts_overview.columns else 0
         n_sessions = workouts_overview["workout_date"].nunique() if "workout_date" in workouts_overview.columns else 0
+        n_exercises = workouts_overview["exercise"].nunique() if "exercise" in workouts_overview.columns else 0
+        total_sets = len(workouts_overview)
         avg_daily_cal = 0.0
         if (
             not nutrition_overview.empty
@@ -1471,7 +1760,23 @@ if page == "Overview":
                 .sum()
                 .mean()
             )
-        s1, s2, s3, s4 = st.columns(4)
+
+        # Top performer by volume
+        top_lifter = ""
+        if "athlete_id" in workouts_overview.columns:
+            vol_series = (wt_num * rp_num).groupby(workouts_overview["athlete_id"]).sum()
+            top_id = vol_series.idxmax()
+            if not athletes_df.empty and "email" in athletes_df.columns and "full_name" in athletes_df.columns:
+                name_match = athletes_df[athletes_df["email"] == top_id]
+                top_lifter = (
+                    str(name_match["full_name"].iloc[0])
+                    if not name_match.empty
+                    else str(top_id).split("@")[0].replace(".", " ").title()
+                )
+            else:
+                top_lifter = str(top_id).split("@")[0].replace(".", " ").title()
+
+        s1, s2, s3, s4, s5 = st.columns(5)
         with s1:
             render_metric_card("🏋️", "Athletes", n_athletes)
         with s2:
@@ -1479,9 +1784,176 @@ if page == "Overview":
         with s3:
             render_metric_card("📅", "Training Days", n_sessions)
         with s4:
+            render_metric_card("🎯", "Exercises", n_exercises)
+        with s5:
             render_metric_card("🔥", "Avg Daily Cal", f"{avg_daily_cal:,.0f}")
 
-    # Recent pipeline runs
+        if top_lifter:
+            ts1, ts2, ts3 = st.columns(3)
+            with ts1:
+                render_metric_card("🏆", "Top Lifter (Volume)", top_lifter, "warning")
+            with ts2:
+                render_metric_card("💪", "Total Sets", f"{total_sets:,}")
+            with ts3:
+                avg_vol_per_set = total_volume / total_sets if total_sets > 0 else 0
+                render_metric_card("⚖️", "Avg Vol/Set", f"{avg_vol_per_set:.1f} kg")
+
+    # ── Athlete Portraits ──
+    render_section_header("The Athletes")
+
+    # Build athlete data from warehouse + generator profiles
+    _ATHLETE_PROFILES: dict[str, dict] = {
+        "marcus.chen@email.com": {
+            "initials": "MC",
+            "style": "Powerlifter",
+            "color": "#6C63FF",
+            "bio": "Trains for raw strength with a push/pull/legs/upper split. Slow-bulking at 3,200 kcal. Big three focused: bench, squat, deadlift.",
+            "schedule": "4 days/week",
+        },
+        "priya.sharma@email.com": {
+            "initials": "PS",
+            "style": "CrossFit",
+            "color": "#00D68F",
+            "bio": "Most conditioned athlete in the dataset. 5 sessions/week with functional movements. Weight perfectly stable at maintenance calories.",
+            "schedule": "5 days/week",
+        },
+        "james.obrien@email.com": {
+            "initials": "JO",
+            "style": "Bodybuilder",
+            "color": "#FFAA00",
+            "bio": "Heaviest athlete at 95 kg. Traditional push/pull/legs split with highest protein intake (2.5 g/kg). Currently in a slow cut.",
+            "schedule": "5 days/week",
+        },
+        "sofia.rodriguez@email.com": {
+            "initials": "SR",
+            "style": "Strength",
+            "color": "#0095FF",
+            "bio": "Pure strength focus with low-rep compounds and minimal isolation. Dedicated squat day, pull day, upper day. Most disciplined programming.",
+            "schedule": "4 days/week",
+        },
+        "tyler.washington@email.com": {
+            "initials": "TW",
+            "style": "Hybrid",
+            "color": "#FF3D71",
+            "bio": "Lowest resting HR (50 bpm) suggesting serious conditioning. Only 3 lifting days with full-body sessions. Efficient and balanced.",
+            "schedule": "3 days/week",
+        },
+        "aiko.tanaka@email.com": {
+            "initials": "AT",
+            "style": "Calisthenics",
+            "color": "#4ECDC4",
+            "bio": "Lightest athlete, primarily bodyweight-based. Pull-ups and dips as staples with light barbell work. Most exercises show 0 kg load.",
+            "schedule": "4 days/week",
+        },
+    }
+
+    # Gather all athlete IDs
+    all_athlete_ids: set[str] = set()
+    for src_df in [workouts_overview, metrics_overview, nutrition_overview]:
+        if "athlete_id" in src_df.columns:
+            all_athlete_ids.update(src_df["athlete_id"].unique())
+
+    ov_name_map: dict[str, str] = {}
+    if not athletes_df.empty and "email" in athletes_df.columns and "full_name" in athletes_df.columns:
+        ov_name_map = dict(zip(athletes_df["email"], athletes_df["full_name"], strict=False))
+
+    sorted_athlete_ids = sorted(all_athlete_ids)
+
+    for row_start in range(0, len(sorted_athlete_ids), 3):
+        portrait_cols = st.columns(3)
+        for j, pcol in enumerate(portrait_cols):
+            if row_start + j >= len(sorted_athlete_ids):
+                break
+            aid = sorted_athlete_ids[row_start + j]
+            profile = _ATHLETE_PROFILES.get(aid, {})
+            name = ov_name_map.get(aid, aid.split("@")[0].replace(".", " ").title())
+            initials = profile.get("initials", name[:2].upper())
+            style = profile.get("style", "Athlete")
+            color = profile.get("color", "#6C63FF")
+            bio = profile.get("bio", "")
+            schedule = profile.get("schedule", "")
+
+            # Compute per-athlete stats
+            a_m = (
+                metrics_overview[metrics_overview["athlete_id"] == aid]
+                if not metrics_overview.empty and "athlete_id" in metrics_overview.columns
+                else pd.DataFrame()
+            )
+            a_w = (
+                workouts_overview[workouts_overview["athlete_id"] == aid]
+                if not workouts_overview.empty and "athlete_id" in workouts_overview.columns
+                else pd.DataFrame()
+            )
+
+            avg_wt = (
+                float(pd.to_numeric(a_m["weight_kg"], errors="coerce").mean())
+                if not a_m.empty and "weight_kg" in a_m.columns
+                else 0.0
+            )
+            avg_bf = (
+                float(pd.to_numeric(a_m["body_fat_pct"], errors="coerce").mean())
+                if not a_m.empty and "body_fat_pct" in a_m.columns
+                else 0.0
+            )
+            avg_hr = (
+                float(pd.to_numeric(a_m["resting_heart_rate"], errors="coerce").mean())
+                if not a_m.empty and "resting_heart_rate" in a_m.columns
+                else 0.0
+            )
+            t_sets = len(a_w)
+
+            # Volume
+            if not a_w.empty and "weight" in a_w.columns and "reps" in a_w.columns:
+                aw_wt = pd.to_numeric(a_w["weight"], errors="coerce").fillna(0)
+                aw_rp = pd.to_numeric(a_w["reps"], errors="coerce").fillna(0)
+                a_vol = float((aw_wt * aw_rp).sum())
+            else:
+                a_vol = 0.0
+
+            with pcol:
+                st.markdown(
+                    f"""
+                <div class="portrait-card" style="border-left: 4px solid {color};">
+                    <div class="portrait-header">
+                        <div class="portrait-avatar" style="background: {color};">{initials}</div>
+                        <div>
+                            <div class="portrait-name">{name}</div>
+                            <div class="portrait-style">{style} &bull; {schedule}</div>
+                        </div>
+                    </div>
+                    <div class="portrait-stats">
+                        <div>
+                            <div class="portrait-stat-label">Weight</div>
+                            <div class="portrait-stat-value">{avg_wt:.1f} kg</div>
+                        </div>
+                        <div>
+                            <div class="portrait-stat-label">Body Fat</div>
+                            <div class="portrait-stat-value">{avg_bf:.1f}%</div>
+                        </div>
+                        <div>
+                            <div class="portrait-stat-label">Resting HR</div>
+                            <div class="portrait-stat-value">{avg_hr:.0f} bpm</div>
+                        </div>
+                        <div>
+                            <div class="portrait-stat-label">Total Sets</div>
+                            <div class="portrait-stat-value">{t_sets:,}</div>
+                        </div>
+                        <div>
+                            <div class="portrait-stat-label">Volume</div>
+                            <div class="portrait-stat-value">{a_vol:,.0f} kg</div>
+                        </div>
+                        <div>
+                            <div class="portrait-stat-label">Schedule</div>
+                            <div class="portrait-stat-value">{schedule}</div>
+                        </div>
+                    </div>
+                    <div class="portrait-bio">{bio}</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+    # ── Recent pipeline runs ──
     render_section_header("Recent Pipeline Runs")
     if not runs_df.empty:
         display_cols = [
@@ -1493,7 +1965,7 @@ if page == "Overview":
     else:
         render_empty_state("📊", "No pipeline runs recorded yet. Run the pipeline to see data here.")
 
-    # Recent alerts
+    # ── Recent alerts ──
     render_section_header("Recent Alerts")
     if alerts:
         for alert in alerts[-5:]:
